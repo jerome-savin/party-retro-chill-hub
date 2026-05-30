@@ -47,8 +47,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--magenta);box-shadow:0
 .guest-name{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.15rem;color:#fff}
 .guest-count{font-family:'Orbitron',sans-serif;font-size:.8rem;color:var(--cyan);white-space:nowrap}
 .empty{color:rgba(232,234,255,.55);line-height:1.45}
-.back{display:inline-flex;margin-top:1.2rem;color:rgba(0,245,255,.75);text-decoration:none;letter-spacing:.12em;text-transform:uppercase;font-size:.75rem}
-.back:hover{color:#fff}
+.back{display:inline-flex;align-items:center;justify-content:center;min-height:2.7rem;margin-top:1.2rem;border:1px solid rgba(0,245,255,.45);background:rgba(0,245,255,.07);color:#fff;text-decoration:none;letter-spacing:.12em;text-transform:uppercase;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1rem;padding:.55rem 1.2rem;box-shadow:0 0 16px rgba(0,245,255,.12);transition:transform .15s ease,border-color .15s ease,background .15s ease}
+.back:hover,.back:focus-visible{transform:translateY(-1px);border-color:var(--magenta);background:rgba(255,0,204,.08);outline:none}
 @media (max-width:820px){.layout{grid-template-columns:1fr}.inline{grid-template-columns:1fr}.page{padding-top:2rem}}
 </style>
 </head>
@@ -109,7 +109,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--magenta);box-shadow:0
         <button class="submit" id="submit-button" type="submit">Valider l'inscription</button>
         <div class="status" id="form-status" aria-live="polite"></div>
       </form>
-      <a class="back" href="index.html">Retour accueil</a>
+      <a class="back" href="index.html">Retour à l'accueil</a>
     </section>
 
     <aside class="panel" aria-labelledby="guests-title">
