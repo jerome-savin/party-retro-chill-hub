@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Party Retro Chill Hub</title>
-<link rel="icon" type="image/png" href="assets/favicons/favicon-bolt.png"/>
+<link rel="icon" type="image/png" href="assets/favicons/favicon-prch.png"/>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Barlow+Condensed:ital,wght@0,400;0,700;0,900;1,700&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -83,8 +83,9 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
 .veil-label{font-size:.58rem;letter-spacing:.24em;text-transform:uppercase;color:rgba(0,245,255,.65)}
 .veil-time{font-family:'Orbitron',sans-serif;font-weight:900;font-size:clamp(.95rem,2.4vw,1.25rem);color:var(--yellow);text-shadow:0 0 12px rgba(255,230,0,.65)}
 
-/* BUCKLE UP */
-.buckle{border:2px solid var(--magenta);display:inline-block;padding:.6rem 2rem;margin:1.2rem auto 0;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-style:italic;font-size:clamp(.9rem,2.5vw,1.3rem);color:var(--yellow);text-shadow:0 0 10px var(--yellow);letter-spacing:.08em;text-align:center;box-shadow:0 0 15px rgba(255,0,204,.2),inset 0 0 10px rgba(255,0,204,.05)}
+/* REGISTRATION */
+.register-button{border:2px solid var(--magenta);display:inline-flex;align-items:center;justify-content:center;min-height:3rem;padding:.65rem 2.1rem;margin:1.2rem auto 0;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:clamp(1rem,2.6vw,1.4rem);color:var(--yellow);text-decoration:none;text-transform:uppercase;text-shadow:0 0 10px var(--yellow);letter-spacing:.08em;text-align:center;background:rgba(255,0,204,.08);box-shadow:0 0 15px rgba(255,0,204,.2),inset 0 0 10px rgba(255,0,204,.05);transition:transform .15s ease,border-color .15s ease,background .15s ease}
+.register-button:hover,.register-button:focus-visible{transform:translateY(-1px);border-color:var(--cyan);background:rgba(0,245,255,.08);outline:none}
 
 .bottom{position:fixed;bottom:0;left:0;width:100%;z-index:50;padding:.55rem 1.5rem;background:rgba(7,5,15,.9);border-top:1px solid rgba(0,245,255,.12);display:flex;align-items:center;justify-content:center;gap:2rem;font-size:.55rem;letter-spacing:.2em;color:rgba(0,245,255,.35);text-transform:uppercase}
 .sep{color:rgba(0,245,255,.15)}
@@ -248,7 +249,7 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
 
   <div class="div-neon"><div class="div-line"></div><div class="div-diamond"></div><div class="div-line"></div></div>
 
-  <div class="buckle">BUCKLE UP. THE FUTURE IS CALLING. →</div>
+  <a class="register-button" href="inscription.html">S'inscrire</a>
 
 </div>
 
