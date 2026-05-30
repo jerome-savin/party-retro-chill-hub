@@ -70,11 +70,25 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
 .cd-label{font-size:.5rem;letter-spacing:.25em;color:rgba(0,245,255,.45);text-transform:uppercase;margin-top:.35rem;display:block}
 .cd-sep{font-family:'Orbitron',sans-serif;font-weight:700;font-size:clamp(1.5rem,4vw,2.5rem);color:rgba(0,245,255,.3);align-self:flex-start;padding-top:.4rem;text-shadow:0 0 10px var(--cyan)}
 
+/* PROGRAM */
+.program{width:100%;max-width:860px;margin:.3rem auto 1.2rem;animation:fadeUp .9s ease .45s both}
+.program-title{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:clamp(1.9rem,5vw,3rem);text-align:center;text-transform:uppercase;color:#fff;text-shadow:0 0 18px rgba(255,0,204,.55);letter-spacing:.02em;margin-bottom:.9rem}
+.program-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem}
+.activity{position:relative;min-height:4rem;border:1px solid rgba(0,245,255,.25);background:rgba(0,245,255,.045);display:flex;align-items:center;gap:.8rem;padding:.85rem 1rem;overflow:hidden;box-shadow:0 0 20px rgba(0,245,255,.06)}
+.activity-icon{font-size:1.55rem;line-height:1;filter:drop-shadow(0 0 8px rgba(0,245,255,.55))}
+.activity-name{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:clamp(1.05rem,2.6vw,1.35rem);letter-spacing:.03em;color:#fff;text-shadow:0 0 10px rgba(0,245,255,.35)}
+.activity.is-locked .activity-icon,.activity.is-locked .activity-name{filter:blur(6px);opacity:.28}
+.activity-veil{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.2rem;padding:.5rem;background:linear-gradient(135deg,rgba(7,5,15,.92),rgba(7,5,15,.75));border:1px solid rgba(255,0,204,.18);text-align:center}
+.activity.is-revealed .activity-veil{display:none}
+.veil-label{font-size:.58rem;letter-spacing:.24em;text-transform:uppercase;color:rgba(0,245,255,.65)}
+.veil-time{font-family:'Orbitron',sans-serif;font-weight:900;font-size:clamp(.95rem,2.4vw,1.25rem);color:var(--yellow);text-shadow:0 0 12px rgba(255,230,0,.65)}
+
 /* BUCKLE UP */
 .buckle{border:2px solid var(--magenta);display:inline-block;padding:.6rem 2rem;margin:1.2rem auto 0;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-style:italic;font-size:clamp(.9rem,2.5vw,1.3rem);color:var(--yellow);text-shadow:0 0 10px var(--yellow);letter-spacing:.08em;text-align:center;box-shadow:0 0 15px rgba(255,0,204,.2),inset 0 0 10px rgba(255,0,204,.05)}
 
 .bottom{position:fixed;bottom:0;left:0;width:100%;z-index:50;padding:.55rem 1.5rem;background:rgba(7,5,15,.9);border-top:1px solid rgba(0,245,255,.12);display:flex;align-items:center;justify-content:center;gap:2rem;font-size:.55rem;letter-spacing:.2em;color:rgba(0,245,255,.35);text-transform:uppercase}
 .sep{color:rgba(0,245,255,.15)}
+@media (max-width:640px){.program-grid{grid-template-columns:1fr}.activity{min-height:3.8rem}}
 
 @keyframes fadeDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
@@ -164,13 +178,81 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
 
   <div class="div-neon"><div class="div-line"></div><div class="div-diamond"></div><div class="div-line"></div></div>
 
+  <section class="program" aria-label="Activités au programme">
+    <h2 class="program-title">Au programme</h2>
+    <div class="program-grid" id="program-grid">
+      <article class="activity" data-activity>
+        <span class="activity-icon" aria-hidden="true">🔍</span>
+        <span class="activity-name">Mission impossible : Sauvez les achats</span>
+        <div class="activity-veil" aria-hidden="true">
+          <span class="veil-label">Prochain déblocage</span>
+          <span class="veil-time" data-veil-time></span>
+        </div>
+      </article>
+
+      <article class="activity" data-activity>
+        <span class="activity-icon" aria-hidden="true">🏅</span>
+        <span class="activity-name">Sport 2000</span>
+        <div class="activity-veil" aria-hidden="true">
+          <span class="veil-label">Prochain déblocage</span>
+          <span class="veil-time" data-veil-time></span>
+        </div>
+      </article>
+
+      <article class="activity" data-activity>
+        <span class="activity-icon" aria-hidden="true">🧪</span>
+        <span class="activity-name">DEUG Chimiste</span>
+        <div class="activity-veil" aria-hidden="true">
+          <span class="veil-label">Prochain déblocage</span>
+          <span class="veil-time" data-veil-time></span>
+        </div>
+      </article>
+
+      <article class="activity" data-activity>
+        <span class="activity-icon" aria-hidden="true">📹</span>
+        <span class="activity-name">Invisible mais essentielle</span>
+        <div class="activity-veil" aria-hidden="true">
+          <span class="veil-label">Prochain déblocage</span>
+          <span class="veil-time" data-veil-time></span>
+        </div>
+      </article>
+
+      <article class="activity" data-activity>
+        <span class="activity-icon" aria-hidden="true">📼</span>
+        <span class="activity-name">Hit clip</span>
+        <div class="activity-veil" aria-hidden="true">
+          <span class="veil-label">Prochain déblocage</span>
+          <span class="veil-time" data-veil-time></span>
+        </div>
+      </article>
+
+      <article class="activity" data-activity>
+        <span class="activity-icon" aria-hidden="true">❤️</span>
+        <span class="activity-name">L'autre moitié s'en mêle</span>
+        <div class="activity-veil" aria-hidden="true">
+          <span class="veil-label">Prochain déblocage</span>
+          <span class="veil-time" data-veil-time></span>
+        </div>
+      </article>
+
+      <article class="activity" data-activity>
+        <span class="activity-icon" aria-hidden="true">🍽️</span>
+        <span class="activity-name">Feed me maybe (version 2002)</span>
+        <div class="activity-veil" aria-hidden="true">
+          <span class="veil-label">Prochain déblocage</span>
+          <span class="veil-time" data-veil-time></span>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <div class="div-neon"><div class="div-line"></div><div class="div-diamond"></div><div class="div-line"></div></div>
+
   <div class="buckle">BUCKLE UP. THE FUTURE IS CALLING. →</div>
 
 </div>
 
 <div class="bottom">
-  <span>Escape Game</span>
-  <span class="sep">◆</span>
   <span>Party Retro Chill Hub</span>
   <span class="sep">◆</span>
   <span>16 · 08 · 2026</span>
@@ -178,7 +260,17 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
 
 <script>
 const target = new Date('2026-08-16T17:30:00').getTime();
+const activityRevealStart = new Date('2026-06-08T00:00:00+02:00').getTime();
+const activityRevealInterval = 7 * 24 * 60 * 60 * 1000;
+const activities = Array.from(document.querySelectorAll('[data-activity]'));
 function pad(n){return String(Math.floor(n)).padStart(2,'0')}
+function formatRevealTime(ms){
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+}
 function tick(){
   const now = Date.now();
   const diff = target - now;
@@ -198,8 +290,35 @@ function tick(){
   document.getElementById('cd-m').textContent=pad(m);
   document.getElementById('cd-s').textContent=pad(s);
 }
+function tickActivities(){
+  if(!activities.length){
+    return;
+  }
+
+  const now = Date.now();
+  const elapsed = now - activityRevealStart;
+  const revealedCount = Math.max(0, Math.min(activities.length, Math.floor(elapsed / activityRevealInterval) + 1));
+
+  activities.forEach((activity, index) => {
+    const veilTime = activity.querySelector('[data-veil-time]');
+    const isRevealed = index < revealedCount;
+    const revealAt = activityRevealStart + (index * activityRevealInterval);
+
+    activity.classList.toggle('is-revealed', isRevealed);
+    activity.classList.toggle('is-locked', !isRevealed);
+
+    if(isRevealed){
+      veilTime.textContent = '';
+      return;
+    }
+
+    veilTime.textContent = formatRevealTime(revealAt - now);
+  });
+}
 tick();
+tickActivities();
 setInterval(tick,1000);
+setInterval(tickActivities,1000);
 </script>
 </body>
 </html>
