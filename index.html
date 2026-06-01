@@ -86,6 +86,8 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
 /* REGISTRATION */
 .register-button{border:2px solid var(--magenta);display:inline-flex;align-items:center;justify-content:center;min-height:3rem;padding:.65rem 2.1rem;margin:1.2rem auto 0;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:clamp(1rem,2.6vw,1.4rem);color:var(--yellow);text-decoration:none;text-transform:uppercase;text-shadow:0 0 10px var(--yellow);letter-spacing:.08em;text-align:center;background:rgba(255,0,204,.08);box-shadow:0 0 15px rgba(255,0,204,.2),inset 0 0 10px rgba(255,0,204,.05);transition:transform .15s ease,border-color .15s ease,background .15s ease}
 .register-button:hover,.register-button:focus-visible{transform:translateY(-1px);border-color:var(--cyan);background:rgba(0,245,255,.08);outline:none}
+.organizers-note{max-width:720px;margin:1.4rem auto 0;text-align:center;font-size:clamp(.72rem,1.8vw,.9rem);line-height:1.5;letter-spacing:.08em;text-transform:uppercase;color:rgba(232,234,255,.62);text-shadow:0 0 10px rgba(0,245,255,.18)}
+.organizers-note span{color:var(--magenta);text-shadow:0 0 12px rgba(255,0,204,.55)}
 
 .bottom{position:fixed;bottom:0;left:0;width:100%;z-index:50;padding:.55rem 1.5rem;background:rgba(7,5,15,.9);border-top:1px solid rgba(0,245,255,.12);display:flex;align-items:center;justify-content:center;gap:2rem;font-size:.55rem;letter-spacing:.2em;color:rgba(0,245,255,.35);text-transform:uppercase}
 .sep{color:rgba(0,245,255,.15)}
@@ -143,8 +145,8 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
   <div class="delorean-display">
     <div class="disp-label">DESTINATION : TIME</div>
     <div class="disp-row">
-      <div class="disp-col"><div class="disp-col-label">DATE</div><div class="disp-num">16</div></div>
-      <div class="disp-col"><div class="disp-col-label">MONTH</div><div class="disp-num">08</div></div>
+      <div class="disp-col"><div class="disp-col-label">DATE</div><div class="disp-num">25</div></div>
+      <div class="disp-col"><div class="disp-col-label">MONTH</div><div class="disp-num">09</div></div>
       <div class="disp-col"><div class="disp-col-label">YEAR</div><div class="disp-num">2026</div></div>
     </div>
     <div class="disp-col-label" style="text-align:center;margin-bottom:.2rem">TIME</div>
@@ -184,7 +186,7 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
     <div class="program-grid" id="program-grid">
       <article class="activity" data-activity>
         <span class="activity-icon" aria-hidden="true">🔍</span>
-        <span class="activity-name">Mission impossible : Sauvez les achats</span>
+        <span class="activity-name"><i>Escape game</i><br/>Mission impossible - Sauvez les achats</span>
         <div class="activity-veil" aria-hidden="true">
           <span class="veil-label">Prochain déblocage</span>
           <span class="veil-time" data-veil-time></span>
@@ -250,27 +252,29 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
   <div class="div-neon"><div class="div-line"></div><div class="div-diamond"></div><div class="div-line"></div></div>
 
   <a class="register-button" href="inscription.html">S'inscrire</a>
+  <p class="organizers-note">N'essayez pas de nous identifier, on est méconnaissables et improbables<br/><span>Les organisateurs</span></p>
 
 </div>
 
 <div class="bottom">
   <span>Party Retro Chill Hub</span>
   <span class="sep">◆</span>
-  <span>16 · 08 · 2026</span>
+  <span>25 · 09 · 2026</span>
 </div>
 
 <script>
-const target = new Date('2026-08-16T17:30:00').getTime();
-const activityRevealStart = new Date('2026-06-08T00:00:00+02:00').getTime();
+const target = new Date('2026-09-25T17:30:00').getTime();
+const activityRevealStart = new Date('2026-06-01T00:00:00+02:00').getTime();
 const activityRevealInterval = 7 * 24 * 60 * 60 * 1000;
 const activities = Array.from(document.querySelectorAll('[data-activity]'));
 function pad(n){return String(Math.floor(n)).padStart(2,'0')}
 function formatRevealTime(ms){
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-  const hours = Math.floor(totalSeconds / 3600);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
-  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+  return `${pad(days)} : ${pad(hours)} : ${pad(minutes)} : ${pad(seconds)}`;
 }
 function tick(){
   const now = Date.now();
