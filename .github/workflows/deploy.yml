@@ -1,13 +1,17 @@
-name: Deploy to OVH via FTP
+name: Deploy via FTP
 
 on:
   push:
     branches:
-      - main  # ou "master" selon votre branche principale
+      - main
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    concurrency:
+      group: ftp-deploy
+      cancel-in-progress: true
 
     steps:
       - name: Checkout code
@@ -19,8 +23,8 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./          # dossier source à uploader
-          server-dir: /www/      # dossier cible sur OVH (souvent /www/ ou /htdocs/)
+          local-dir: ./
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
           exclude: |
             **/.git*
             **/.git*/**
