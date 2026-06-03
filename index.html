@@ -145,8 +145,8 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
   <div class="delorean-display">
     <div class="disp-label">DESTINATION : TIME</div>
     <div class="disp-row">
-      <div class="disp-col"><div class="disp-col-label">DATE</div><div class="disp-num">25</div></div>
-      <div class="disp-col"><div class="disp-col-label">MONTH</div><div class="disp-num">09</div></div>
+      <div class="disp-col"><div class="disp-col-label">DATE</div><div class="disp-num">02</div></div>
+      <div class="disp-col"><div class="disp-col-label">MONTH</div><div class="disp-num">10</div></div>
       <div class="disp-col"><div class="disp-col-label">YEAR</div><div class="disp-num">2026</div></div>
     </div>
     <div class="disp-col-label" style="text-align:center;margin-bottom:.2rem">TIME</div>
@@ -259,12 +259,12 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
 <div class="bottom">
   <span>Party Retro Chill Hub</span>
   <span class="sep">◆</span>
-  <span>25 · 09 · 2026</span>
+  <span>02 · 10 · 2026</span>
 </div>
 
 <script>
-const target = new Date('2026-09-25T17:30:00').getTime();
-const activityRevealStart = new Date('2026-06-01T00:00:00+02:00').getTime();
+const target = new Date('2026-10-02T17:30:00+02:00').getTime();
+const activityRevealStart = new Date('2026-06-15T10:00:00+02:00').getTime();
 const activityRevealInterval = 7 * 24 * 60 * 60 * 1000;
 const activities = Array.from(document.querySelectorAll('[data-activity]'));
 function pad(n){return String(Math.floor(n)).padStart(2,'0')}
@@ -301,13 +301,10 @@ function tickActivities(){
   }
 
   const now = Date.now();
-  const elapsed = now - activityRevealStart;
-  const revealedCount = Math.max(0, Math.min(activities.length, Math.floor(elapsed / activityRevealInterval) + 1));
-
   activities.forEach((activity, index) => {
     const veilTime = activity.querySelector('[data-veil-time]');
-    const isRevealed = index < revealedCount;
-    const revealAt = activityRevealStart + (index * activityRevealInterval);
+    const revealAt = index === 0 ? 0 : activityRevealStart + ((index - 1) * activityRevealInterval);
+    const isRevealed = index === 0 || now >= revealAt;
 
     activity.classList.toggle('is-revealed', isRevealed);
     activity.classList.toggle('is-locked', !isRevealed);
