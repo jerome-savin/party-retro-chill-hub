@@ -30,4 +30,5 @@ jobs:
             **/.git*/**
             **/node_modules/**
             .github/**
+            apps-script/**
             README.md

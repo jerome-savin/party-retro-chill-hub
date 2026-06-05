@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Escape Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="assets/escape.css"/>
+</head>
+<body>
+<main class="shell" data-admin>
+  <div class="topline">
+    <a class="nav-link" href="escape.html">Dashboard</a>
+    <span>Admin escape // Organisateur</span>
+  </div>
+
+  <section class="hero">
+    <h1>Admin escape</h1>
+    <p class="subtitle">Creez les equipes, attribuez les mots de passe et gerez la progression depuis une interface dediee.</p>
+  </section>
+
+  <section class="dashboard">
+    <aside class="panel">
+      <h2 class="panel-title">Acces admin</h2>
+      <div class="field">
+        <label for="admin-password">Mot de passe admin</label>
+        <input id="admin-password" data-admin-password type="password" autocomplete="current-password"/>
+      </div>
+      <button type="button" data-admin-login>Charger</button>
+      <p class="notice" data-notice></p>
+    </aside>
+
+    <section>
+      <div class="panel">
+        <h2 class="panel-title">Nouvelle equipe</h2>
+        <div class="field">
+          <label for="team-name">Nom equipe</label>
+          <input id="team-name" data-team-name type="text"/>
+        </div>
+        <div class="field">
+          <label for="team-password">Mot de passe equipe</label>
+          <input id="team-password" data-team-password type="text"/>
+        </div>
+        <button type="button" data-admin-create>Creer equipe</button>
+      </div>
+
+      <div class="panel admin-list-panel">
+        <h2 class="panel-title">Equipes</h2>
+        <div class="team-list" data-admin-list></div>
+      </div>
+    </section>
+  </section>
+</main>
+<script src="assets/api-config.js"></script>
+<script src="assets/escape.js"></script>
+</body>
+</html>

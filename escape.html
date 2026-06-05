@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Escape Game - Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="assets/escape.css"/>
+</head>
+<body>
+<main class="shell" data-dashboard>
+  <div class="topline">
+    <a class="nav-link" href="index.html">Retour accueil</a>
+    <a class="nav-link" href="rejoindre-equipe.html">Rejoindre une equipe</a>
+    <a class="nav-link" href="admin-escape.html">Admin</a>
+    <span>PRCH // Escape control room</span>
+  </div>
+
+  <section class="hero">
+    <h1>Dashboard escape game</h1>
+    <p class="subtitle">Suivez l'avancement des equipes, ouvrez les 7 epreuves et visualisez le deblocage progressif de l'epreuve finale.</p>
+  </section>
+
+  <section class="dashboard">
+    <aside class="panel">
+      <h2 class="panel-title">Equipes</h2>
+      <div class="field">
+        <label for="team-select">Voir une equipe</label>
+        <select id="team-select" data-team-select></select>
+      </div>
+      <p class="notice" data-sync-notice></p>
+      <div class="team-list" data-team-list></div>
+    </aside>
+
+    <section>
+      <div class="panel progress-wrap">
+        <h2 class="panel-title">Progression finale</h2>
+        <div class="progress-label">
+          <span>Fragments collectes</span>
+          <strong data-progress-count>0/7</strong>
+        </div>
+        <div class="progress-track" aria-hidden="true"><div class="progress-fill" data-progress-fill></div></div>
+        <div class="progress-label">
+          <span>Deblocage final</span>
+          <strong data-final-progress>0%</strong>
+        </div>
+      </div>
+
+      <div class="challenge-grid" data-challenge-grid></div>
+
+      <section class="final-panel is-locked" data-final-panel>
+        <div class="final-state" data-final-state>Finale verrouillee</div>
+        <p class="challenge-copy" data-final-copy>La finale se debloque progressivement avec les 7 fragments.</p>
+        <a class="button" href="finale.html" data-final-link hidden>Ouvrir la finale</a>
+      </section>
+    </section>
+  </section>
+</main>
+<script src="assets/api-config.js"></script>
+<script src="assets/escape.js"></script>
+</body>
+</html>

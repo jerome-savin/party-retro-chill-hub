@@ -67,7 +67,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--magenta);box-shadow:0
 
   <div class="layout">
     <section class="panel" aria-labelledby="form-title">
-      <div class="setup" id="setup-message">Connexion Google Sheets à configurer : remplacez <strong>SCRIPT_URL</strong> dans cette page par l'URL de votre Web App Google Apps Script.</div>
+      <div class="setup" id="setup-message">Connexion Google Sheets à configurer : renseignez <strong>PRCH_API_URL</strong> dans assets/api-config.js.</div>
       <h2 class="panel-title" id="form-title">Formulaire</h2>
       <form id="registration-form">
         <div class="inline">
@@ -131,8 +131,9 @@ input:focus,select:focus,textarea:focus{border-color:var(--magenta);box-shadow:0
   </div>
 </main>
 
+<script src="assets/api-config.js"></script>
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzLLcmDo0bCMj-GYcdLblfkYV9v4aCwr5YB5b-ezbK6u4vgQkRUbWiQXCWJZ-nsVydo/exec';
+const SCRIPT_URL = window.PRCH_API_URL || '';
 const isConfigured = SCRIPT_URL.startsWith('https://');
 const setupMessage = document.getElementById('setup-message');
 const form = document.getElementById('registration-form');

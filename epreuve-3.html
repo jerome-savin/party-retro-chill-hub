@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Epreuve 03 - Escape Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="assets/escape.css"/>
+</head>
+<body>
+<main class="shell" data-challenge-page data-challenge-id="3">
+  <div class="topline"><a class="nav-link" href="escape.html">Dashboard</a><span>Epreuve 03 // Fragment d'indice</span></div>
+  <section class="hero"><h1>Epreuve 03</h1><p class="subtitle">DEUG Chimiste.</p></section>
+  <section class="page-layout">
+    <article class="brief">
+      <span class="challenge-kicker">Mission active</span>
+      <h2 data-challenge-title></h2>
+      <p>Ajoutez ici l'enigme, les consignes, les images ou les manipulations necessaires a cette epreuve.</p>
+      <div class="fragment-box"><strong>Fragment par defaut</strong><br/><span data-default-clue></span></div>
+    </article>
+    <aside class="panel">
+      <h2 class="panel-title">Validation</h2>
+      <div class="field"><label for="team-select">Equipe</label><select id="team-select" data-team-select></select></div>
+      <div class="field"><label for="fragment-note">Fragment obtenu</label><textarea id="fragment-note" data-fragment-note placeholder="Note, code, mot-cle ou indice collecte"></textarea></div>
+      <button type="button" data-complete-challenge>Valider l'epreuve</button>
+      <p class="notice" data-notice></p>
+    </aside>
+  </section>
+</main>
+<script src="assets/api-config.js"></script>
+<script src="assets/escape.js"></script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Finale - Escape Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="assets/escape.css"/>
+</head>
+<body>
+<main class="shell" data-finale>
+  <div class="topline">
+    <a class="nav-link" href="escape.html">Dashboard</a>
+    <span>Epreuve finale // Acces conditionnel</span>
+  </div>
+
+  <section class="hero">
+    <h1>Epreuve finale</h1>
+    <p class="subtitle">La finale s'ouvre uniquement quand les 7 fragments d'une equipe ont ete collectes.</p>
+  </section>
+
+  <section class="page-layout">
+    <article class="brief">
+      <div class="field">
+        <label for="team-select">Equipe</label>
+        <select id="team-select" data-team-select></select>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-label">
+          <span>Fragments collectes</span>
+          <strong data-progress-count>0/7</strong>
+        </div>
+        <div class="progress-track" aria-hidden="true"><div class="progress-fill" data-progress-fill></div></div>
+        <div class="progress-label">
+          <span>Deblocage final</span>
+          <strong data-final-progress>0%</strong>
+        </div>
+      </div>
+
+      <div data-locked>
+        <h2>Acces verrouille</h2>
+        <p>Continuez les epreuves. Les fragments manquants apparaitront ici au fur et a mesure.</p>
+      </div>
+
+      <div data-unlocked hidden>
+        <h2>Acces autorise</h2>
+        <p>Les 7 fragments sont reunis. Vous pouvez afficher ici l'enigme finale, son code d'ouverture ou les consignes du maitre du jeu.</p>
+        <div class="fragment-box">Emplacement reserve a l'epreuve finale.</div>
+      </div>
+    </article>
+
+    <aside class="panel">
+      <h2 class="panel-title">Fragments</h2>
+      <div class="team-list" data-fragments></div>
+    </aside>
+  </section>
+</main>
+<script src="assets/api-config.js"></script>
+<script src="assets/escape.js"></script>
+</body>
+</html>
