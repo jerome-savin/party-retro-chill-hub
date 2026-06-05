@@ -3,13 +3,13 @@ const SESSION_KEY = "prch_escape_team_session_v1";
 const ADMIN_KEY = "prch_escape_admin_password_v1";
 const API_URL = (window.PRCH_API_URL || "").trim();
 const CHALLENGES = [
-  { id: 1, title: "Sauvez les achats", clue: "Fragment 01: le point de depart est cache dans la liste." },
-  { id: 2, title: "Sport 2000", clue: "Fragment 02: retenez le numero qui revient deux fois." },
-  { id: 3, title: "DEUG Chimiste", clue: "Fragment 03: la couleur dominante indique la piste." },
-  { id: 4, title: "Invisible mais essentielle", clue: "Fragment 04: cherchez ce qui manque a l'image." },
-  { id: 5, title: "Hit clip", clue: "Fragment 05: le refrain donne l'ordre." },
-  { id: 6, title: "L'autre moitie s'en mele", clue: "Fragment 06: associez les deux moities avant de compter." },
-  { id: 7, title: "Feed me maybe", clue: "Fragment 07: l'ingredient final transforme la reponse." }
+  { id: 1, title: "L'acheteur compulsif", clue: "Fragment 01: le point de depart est cache dans la liste." },
+  { id: 2, title: "Le gestionnaire de cataclysme", clue: "Fragment 02: retenez le numero qui revient deux fois." },
+  { id: 3, title: "Le colis dangereux", clue: "Fragment 03: la couleur dominante indique la piste." },
+  { id: 4, title: "Le claquage du stockage", clue: "Fragment 04: cherchez ce qui manque a l'image." },
+  { id: 5, title: "L'IA c'est pas tout jeune", clue: "Fragment 05: le refrain donne l'ordre." },
+  { id: 6, title: "Le phare de sion", clue: "Fragment 06: associez les deux moities avant de compter." },
+  { id: 7, title: "On SUPPORTe plus", clue: "Fragment 07: l'ingredient final transforme la reponse." }
 ];
 
 function defaultState(){
@@ -155,6 +155,14 @@ async function loadState(adminPassword){
   }
 }
 
+async function refreshState(currentState, adminPassword){
+  const remote = await apiRequest(adminPassword ? "adminList" : "get", adminPassword ? { adminPassword } : {});
+  const selectedTeam = currentState.selectedTeam;
+  const state = normalizeState({ ...remote, selectedTeam });
+  saveLocalState(state);
+  return state;
+}
+
 function getTeam(state, name = state.selectedTeam){
   return state.teams.find(team => team.name === name) || state.teams[0] || { name: "", completed: [], fragments: {} };
 }
@@ -201,21 +209,30 @@ function setNotice(node, message, isError = false){
 }
 
 async function initDashboard(){
-  let state = await loadState();
+  let state = loadLocalState();
   const root = document.querySelector("[data-dashboard]");
-  const select = root.querySelector("[data-team-select]");
+  const currentTeamName = root.querySelector("[data-current-team]");
   const teamList = root.querySelector("[data-team-list]");
   const challengeGrid = root.querySelector("[data-challenge-grid]");
   const finalPanel = root.querySelector("[data-final-panel]");
   const notice = root.querySelector("[data-sync-notice]");
 
   function render(){
-    const team = getTeam(state);
-    renderTeamSelect(select, state);
+    const session = getSession();
+    if(session && state.teams.some(item => item.name === session.team)){
+      state.selectedTeam = session.team;
+    }
+    const team = session ? getTeam(state, session.team) : { name: "", completed: [], fragments: {} };
+    currentTeamName.textContent = session ? session.team : "Non connectee";
     updateProgress(root, team);
-    teamList.innerHTML = state.teams.length ? state.teams.map(item => (
-      `<div class="team-pill"><span>${escapeHtml(item.name)}</span><span>${completedCount(item)}/${CHALLENGES.length}</span></div>`
-    )).join("") : '<p class="empty">Aucune equipe creee pour le moment.</p>';
+    const otherTeams = state.teams.filter(item => item.name !== team.name);
+    teamList.innerHTML = otherTeams.length ? otherTeams.map(item => {
+      const pct = Math.round((completedCount(item) / CHALLENGES.length) * 100);
+      return `<div class="team-progress">
+        <div class="team-progress-head"><span>${escapeHtml(item.name)}</span><strong>${completedCount(item)}/${CHALLENGES.length}</strong></div>
+        <div class="mini-track" aria-hidden="true"><span style="width:${pct}%"></span></div>
+      </div>`;
+    }).join("") : '<p class="empty">Aucune autre equipe a afficher.</p>';
     challengeGrid.innerHTML = CHALLENGES.map(challenge => {
       const done = isChallengeComplete(team, challenge.id);
       return `<a class="challenge-card ${done ? "is-complete" : ""}" href="epreuve-${challenge.id}.html">
@@ -231,20 +248,30 @@ async function initDashboard(){
     finalPanel.querySelector("[data-final-copy]").textContent = unlocked
       ? "Tous les fragments sont collectes pour cette equipe."
       : "La finale se debloque progressivement avec les 7 fragments.";
-    finalPanel.querySelector("[data-final-link]").toggleAttribute("hidden", !unlocked);
+    const finalLink = finalPanel.querySelector("[data-final-link]");
+    finalLink.classList.toggle("is-disabled", !unlocked);
+    finalLink.setAttribute("aria-disabled", unlocked ? "false" : "true");
+    finalLink.tabIndex = unlocked ? 0 : -1;
     setNotice(notice, API_URL ? "Synchronisation Google Sheets active." : "Mode local: renseignez PRCH_API_URL pour activer Google Sheets.");
   }
 
-  select.addEventListener("change", () => {
-    state.selectedTeam = select.value;
-    saveLocalState(state);
-    render();
+  finalPanel.querySelector("[data-final-link]").addEventListener("click", event => {
+    if(event.currentTarget.getAttribute("aria-disabled") === "true"){
+      event.preventDefault();
+      setNotice(notice, "Finale verrouillee: les 7 fragments sont requis.", true);
+    }
   });
   render();
+  refreshState(state).then(nextState => {
+    state = nextState;
+    render();
+  }).catch(() => {
+    setNotice(notice, "Donnees locales affichees. Synchronisation Sheets indisponible.", true);
+  });
 }
 
 async function initJoinPage(){
-  let state = await loadState();
+  let state = loadLocalState();
   const root = document.querySelector("[data-join-team]");
   const select = root.querySelector("[data-team-select]");
   const password = root.querySelector("[data-team-password]");
@@ -281,10 +308,16 @@ async function initJoinPage(){
   });
 
   render();
+  refreshState(state).then(nextState => {
+    state = nextState;
+    render();
+  }).catch(() => {
+    setNotice(notice, "Liste locale affichee. Synchronisation Sheets indisponible.", true);
+  });
 }
 
 async function initChallengePage(){
-  let state = await loadState();
+  let state = loadLocalState();
   const root = document.querySelector("[data-challenge-page]");
   const id = Number(root.dataset.challengeId);
   const challenge = CHALLENGES[id - 1];
@@ -341,10 +374,14 @@ async function initChallengePage(){
     }
   });
   render();
+  refreshState(state).then(nextState => {
+    state = nextState;
+    render();
+  }).catch(() => {});
 }
 
 async function initFinale(){
-  let state = await loadState();
+  let state = loadLocalState();
   const root = document.querySelector("[data-finale]");
   const select = root.querySelector("[data-team-select]");
   const fragments = root.querySelector("[data-fragments]");
@@ -358,9 +395,13 @@ async function initFinale(){
     const isUnlocked = completedCount(team) === CHALLENGES.length;
     locked.hidden = isUnlocked;
     unlocked.hidden = !isUnlocked;
-    fragments.innerHTML = CHALLENGES.map(challenge => (
-      `<div class="team-pill"><span>${String(challenge.id).padStart(2, "0")} ${challenge.title}</span><span>${team.fragments[challenge.id] ? "Collecte" : "Manquant"}</span></div>`
-    )).join("");
+    fragments.innerHTML = CHALLENGES.map(challenge => {
+      const fragment = team.fragments[challenge.id];
+      return `<div class="team-pill fragment-row">
+        <span>${String(challenge.id).padStart(2, "0")} ${challenge.title}</span>
+        <span>${fragment ? escapeHtml(fragment) : "Manquant"}</span>
+      </div>`;
+    }).join("");
   }
 
   select.addEventListener("change", () => {
@@ -369,6 +410,10 @@ async function initFinale(){
     render();
   });
   render();
+  refreshState(state).then(nextState => {
+    state = nextState;
+    render();
+  }).catch(() => {});
 }
 
 async function initAdminPage(){

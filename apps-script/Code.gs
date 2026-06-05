@@ -3,6 +3,8 @@ const SHEET_TEAMS = 'Escape_Teams';
 const SHEET_PROGRESS = 'Escape_Progress';
 const DEFAULT_TEAMS = [];
 const CHALLENGE_COUNT = 7;
+const ESCAPE_STATE_CACHE_KEY = 'escape_public_state_v2';
+const ESCAPE_STATE_CACHE_SECONDS = 60;
 
 function setupSheets() {
   setupRegistrationSheet_();
@@ -15,7 +17,9 @@ function doGet(event) {
 
   try {
     if (params.action) {
-      setupEscapeSheets_();
+      if (params.action !== 'get') {
+        setupEscapeSheets_();
+      }
       return jsonp_(callback, { ok: true, data: handleEscapeAction_(params) });
     }
 
@@ -202,6 +206,49 @@ function migrateTeamsSheet_(sheet) {
 }
 
 function readEscapeState_() {
+  const cached = CacheService.getScriptCache().get(ESCAPE_STATE_CACHE_KEY);
+  if (cached) {
+    return JSON.parse(cached);
+  }
+
+  const teams = getEscapeTeamRecords_().filter(team => team.active);
+  const progress = getProgressRows_();
+
+  const state = {
+    teams: teams.map(team => {
+      const completed = [];
+      const fragments = {};
+      progress.forEach(row => {
+        if (row.team === team.name) {
+          completed.push(row.challengeId);
+          fragments[row.challengeId] = row.fragment || '';
+        }
+      });
+      return { name: team.name, completed, fragments };
+    })
+  };
+  CacheService.getScriptCache().put(ESCAPE_STATE_CACHE_KEY, JSON.stringify(state), ESCAPE_STATE_CACHE_SECONDS);
+  return state;
+}
+
+function readEscapeAdminState_() {
+  const publicState = readEscapeStateNoCache_();
+  const records = getEscapeTeamRecords_();
+  return {
+    teams: records.map(record => {
+      const publicTeam = publicState.teams.find(team => team.name === record.name) || { completed: [], fragments: {} };
+      return {
+        name: record.name,
+        active: record.active,
+        hasPassword: Boolean(record.passwordHash),
+        completed: publicTeam.completed,
+        fragments: publicTeam.fragments
+      };
+    })
+  };
+}
+
+function readEscapeStateNoCache_() {
   const teams = getEscapeTeamRecords_().filter(team => team.active);
   const progress = getProgressRows_();
 
@@ -220,21 +267,8 @@ function readEscapeState_() {
   };
 }
 
-function readEscapeAdminState_() {
-  const publicState = readEscapeState_();
-  const records = getEscapeTeamRecords_();
-  return {
-    teams: records.map(record => {
-      const publicTeam = publicState.teams.find(team => team.name === record.name) || { completed: [], fragments: {} };
-      return {
-        name: record.name,
-        active: record.active,
-        hasPassword: Boolean(record.passwordHash),
-        completed: publicTeam.completed,
-        fragments: publicTeam.fragments
-      };
-    })
-  };
+function invalidateEscapeCache_() {
+  CacheService.getScriptCache().remove(ESCAPE_STATE_CACHE_KEY);
 }
 
 function getEscapeTeamRecords_() {
@@ -276,6 +310,7 @@ function createEscapeTeam_(name, password) {
   if (existing) {
     setEscapeTeamPassword_(existing.name, cleanPassword);
     SpreadsheetApp.getActive().getSheetByName(SHEET_TEAMS).getRange(existing.row, 4).setValue(true);
+    invalidateEscapeCache_();
     return;
   }
 
@@ -285,6 +320,7 @@ function createEscapeTeam_(name, password) {
     new Date(),
     true
   ]);
+  invalidateEscapeCache_();
 }
 
 function setEscapeTeamPassword_(team, password) {
@@ -295,6 +331,7 @@ function setEscapeTeamPassword_(team, password) {
   }
   const record = findTeamRecord_(cleanTeam);
   SpreadsheetApp.getActive().getSheetByName(SHEET_TEAMS).getRange(record.row, 2).setValue(hash_(cleanPassword));
+  invalidateEscapeCache_();
 }
 
 function joinEscapeTeam_(team, password) {
@@ -346,12 +383,14 @@ function resetEscapeTeam_(team) {
       sheet.deleteRow(row);
     }
   }
+  invalidateEscapeCache_();
 }
 
 function deleteEscapeTeam_(team) {
   const record = findTeamRecord_(team);
   resetEscapeTeam_(record.name);
   SpreadsheetApp.getActive().getSheetByName(SHEET_TEAMS).deleteRow(record.row);
+  invalidateEscapeCache_();
 }
 
 function completeEscapeChallenge_(team, challengeId, fragment) {
@@ -370,11 +409,13 @@ function completeEscapeChallenge_(team, challengeId, fragment) {
   for (let row = 2; row <= values.length; row++) {
     if (values[row - 1][0] === cleanTeam && Number(values[row - 1][1]) === challengeId) {
       sheet.getRange(row, 3, 1, 2).setValues([[cleanFragment, new Date()]]);
+      invalidateEscapeCache_();
       return;
     }
   }
 
   sheet.appendRow([cleanTeam, challengeId, cleanFragment, new Date()]);
+  invalidateEscapeCache_();
 }
 
 function requireAdmin_(adminPassword) {

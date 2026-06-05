@@ -38,8 +38,21 @@ button,.button{border:1px solid rgba(255,0,204,.48);border-radius:6px;background
 button:hover,.button:hover,button:focus-visible,.button:focus-visible{border-color:var(--cyan);outline:none;background:rgba(0,245,255,.1)}
 button.secondary{border-color:rgba(0,245,255,.32);color:var(--cyan);background:rgba(0,245,255,.06)}
 button:disabled{cursor:not-allowed;opacity:.45}
+.button.is-disabled{cursor:not-allowed;opacity:.42;filter:grayscale(.35);border-color:rgba(255,255,255,.18);color:rgba(238,240,255,.45);background:rgba(255,255,255,.04);pointer-events:auto}
 .team-list{display:grid;gap:.45rem;margin-top:.8rem}
 .team-pill{display:flex;align-items:center;justify-content:space-between;gap:.5rem;border:1px solid rgba(255,255,255,.1);border-radius:6px;background:rgba(255,255,255,.035);padding:.55rem .65rem;color:rgba(238,240,255,.8)}
+.fragment-row{align-items:flex-start}
+.fragment-row span:last-child{max-width:55%;text-align:right;color:rgba(255,246,160,.9);overflow-wrap:anywhere;line-height:1.35}
+.current-team{border:1px solid rgba(255,230,0,.32);border-radius:8px;background:rgba(255,230,0,.055);padding:.9rem;margin-bottom:.8rem}
+.current-team-label,.side-title{display:block;color:rgba(0,245,255,.68);font-size:.68rem;letter-spacing:.16em;text-transform:uppercase}
+.current-team strong{display:block;margin-top:.35rem;font-family:"Barlow Condensed",Impact,sans-serif;font-size:clamp(2rem,6vw,3.3rem);line-height:.95;text-transform:uppercase;color:#fff;text-shadow:0 0 16px rgba(255,230,0,.38),0 0 26px rgba(0,245,255,.24)}
+.side-title{margin:1rem 0 .45rem;font-size:.72rem}
+.team-progress{border:1px solid rgba(0,245,255,.18);border-radius:6px;background:rgba(0,245,255,.035);padding:.62rem}
+.team-progress-head{display:flex;align-items:center;justify-content:space-between;gap:.55rem;color:rgba(238,240,255,.82);font-size:.82rem}
+.team-progress-head span{overflow-wrap:anywhere}
+.team-progress-head strong{color:var(--cyan);white-space:nowrap}
+.mini-track{height:7px;margin-top:.45rem;border:1px solid rgba(0,245,255,.2);border-radius:999px;background:rgba(0,0,0,.32);overflow:hidden}
+.mini-track span{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--green));box-shadow:0 0 10px rgba(0,255,136,.4)}
 .admin-row{align-items:flex-start}
 .admin-actions{display:flex;flex-wrap:wrap;gap:.35rem;justify-content:flex-end}
 .admin-actions button{min-height:2rem;padding:.35rem .5rem;font-size:.68rem}

@@ -12,9 +12,7 @@
 <body>
 <main class="shell" data-dashboard>
   <div class="topline">
-    <a class="nav-link" href="index.html">Retour accueil</a>
     <a class="nav-link" href="rejoindre-equipe.html">Rejoindre une equipe</a>
-    <a class="nav-link" href="admin-escape.html">Admin</a>
     <span>PRCH // Escape control room</span>
   </div>
 
@@ -26,11 +24,12 @@
   <section class="dashboard">
     <aside class="panel">
       <h2 class="panel-title">Equipes</h2>
-      <div class="field">
-        <label for="team-select">Voir une equipe</label>
-        <select id="team-select" data-team-select></select>
+      <div class="current-team">
+        <span class="current-team-label">Votre equipe</span>
+        <strong data-current-team>Non connectee</strong>
       </div>
       <p class="notice" data-sync-notice></p>
+      <h3 class="side-title">Autres equipes</h3>
       <div class="team-list" data-team-list></div>
     </aside>
 
@@ -53,7 +52,7 @@
       <section class="final-panel is-locked" data-final-panel>
         <div class="final-state" data-final-state>Finale verrouillee</div>
         <p class="challenge-copy" data-final-copy>La finale se debloque progressivement avec les 7 fragments.</p>
-        <a class="button" href="finale.html" data-final-link hidden>Ouvrir la finale</a>
+        <a class="button is-disabled" href="finale.html" data-final-link aria-disabled="true" tabindex="-1">Ouvrir la finale</a>
       </section>
     </section>
   </section>
