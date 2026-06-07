@@ -22,13 +22,17 @@
   </section>
 
   <section class="page-layout">
-    <article class="brief">
+    <article class="brief session-card" data-session-card>
       <h2>Session locale</h2>
       <p data-session-box>Aucune equipe connectee sur cet appareil.</p>
-      <p>Une fois connecte, vous pourrez valider les epreuves sans ressaisir le mot de passe a chaque page.</p>
+      <p data-session-help>Utilisez le bandeau Acces equipe pour vous connecter.</p>
+      <div class="button-row session-actions" data-session-actions hidden>
+        <a class="button" href="escape.html">Voir le dashboard</a>
+        <button type="button" class="secondary" data-change-team>Changer d'equipe</button>
+      </div>
     </article>
 
-    <aside class="panel">
+    <aside class="panel" data-access-panel>
       <h2 class="panel-title">Acces equipe</h2>
       <div class="field">
         <label for="team-select">Equipe</label>
@@ -40,7 +44,6 @@
       </div>
       <div class="button-row">
         <button type="button" data-join-button>Rejoindre</button>
-        <button type="button" class="secondary" data-leave-team>Quitter</button>
       </div>
       <p class="notice" data-notice></p>
     </aside>

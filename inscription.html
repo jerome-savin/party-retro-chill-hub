@@ -67,7 +67,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--magenta);box-shadow:0
 
   <div class="layout">
     <section class="panel" aria-labelledby="form-title">
-      <div class="setup" id="setup-message">Connexion Google Sheets à configurer : renseignez <strong>PRCH_API_URL</strong> dans assets/api-config.js.</div>
+      <div class="setup" id="setup-message">Connexion serveur à configurer : renseignez <strong>PRCH_API_URL</strong> dans assets/api-config.js.</div>
       <h2 class="panel-title" id="form-title">Formulaire</h2>
       <form id="registration-form">
         <div class="inline">
@@ -169,7 +169,7 @@ function loadGuests(){
     setupMessage.classList.add('is-visible');
     registeredCount.textContent = '0';
     participantCount.textContent = '0';
-    guestList.innerHTML = '<p class="empty">La liste apparaîtra ici après connexion à Google Sheets.</p>';
+    guestList.innerHTML = '<p class="empty">La liste apparaîtra ici après connexion au serveur.</p>';
     return;
   }
 
@@ -193,7 +193,7 @@ form.addEventListener('submit', async (event) => {
   event.preventDefault();
 
   if(!isConfigured){
-    setStatus('Google Sheets n’est pas encore configuré.', 'error');
+    setStatus('Le serveur n’est pas encore configuré.', 'error');
     return;
   }
 

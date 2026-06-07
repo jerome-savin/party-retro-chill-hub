@@ -91,7 +91,7 @@ function ensureLoader(){
     </div>
     <div class="loader-copy">
       <strong>Synchronisation temporelle</strong>
-      <span>Connexion Google Sheets</span>
+      <span>Connexion serveur</span>
     </div>
   `;
   document.body.appendChild(loader);
@@ -114,7 +114,7 @@ function apiRequest(action, payload = {}){
     });
     const timeout = window.setTimeout(() => {
       cleanup();
-      reject(new Error("Delai depasse avec Google Sheets"));
+      reject(new Error("Delai depasse avec le serveur"));
     }, 12000);
     function cleanup(){
       window.clearTimeout(timeout);
@@ -134,7 +134,7 @@ function apiRequest(action, payload = {}){
     };
     script.onerror = () => {
       cleanup();
-      reject(new Error("Impossible de contacter Google Sheets"));
+      reject(new Error("Impossible de contacter le serveur"));
     };
     script.src = url.toString();
     document.body.appendChild(script);
@@ -256,7 +256,7 @@ async function initDashboard(){
     finalLink.classList.toggle("is-disabled", !unlocked);
     finalLink.setAttribute("aria-disabled", unlocked ? "false" : "true");
     finalLink.tabIndex = unlocked ? 0 : -1;
-    setNotice(notice, API_URL ? "Synchronisation Google Sheets active." : "Mode local: renseignez PRCH_API_URL pour activer Google Sheets.");
+    setNotice(notice, API_URL ? "Synchronisation serveur active." : "Mode local: renseignez PRCH_API_URL pour activer le serveur.");
   }
 
   finalPanel.querySelector("[data-final-link]").addEventListener("click", event => {
@@ -270,7 +270,7 @@ async function initDashboard(){
     state = nextState;
     render();
   }).catch(() => {
-    setNotice(notice, "Donnees locales affichees. Synchronisation Sheets indisponible.", true);
+    setNotice(notice, "Donnees locales affichees. Synchronisation serveur indisponible.", true);
   });
 }
 
@@ -280,14 +280,30 @@ async function initJoinPage(){
   const select = root.querySelector("[data-team-select]");
   const password = root.querySelector("[data-team-password]");
   const button = root.querySelector("[data-join-button]");
-  const leaveButton = root.querySelector("[data-leave-team]");
   const notice = root.querySelector("[data-notice]");
   const sessionBox = root.querySelector("[data-session-box]");
+  const sessionHelp = root.querySelector("[data-session-help]");
+  const sessionCard = root.querySelector("[data-session-card]");
+  const sessionActions = root.querySelector("[data-session-actions]");
+  const accessPanel = root.querySelector("[data-access-panel]");
+  const changeButton = root.querySelector("[data-change-team]");
 
   function render(){
-    renderTeamSelect(select, state, true);
     const session = getSession();
-    sessionBox.textContent = session ? `Equipe connectee: ${session.team}` : "Aucune equipe connectee sur cet appareil.";
+    if(!session){
+      renderTeamSelect(select, state, true);
+    }
+    sessionBox.textContent = session ? session.team : "Aucune equipe connectee sur cet appareil.";
+    sessionBox.classList.toggle("is-ok", Boolean(session));
+    sessionCard.classList.toggle("is-connected", Boolean(session));
+    accessPanel.classList.toggle("is-hidden", Boolean(session));
+    sessionActions.hidden = !session;
+    if(sessionHelp){
+      sessionHelp.textContent = session
+        ? "Vous etes bien connecte a une equipe."
+        : "Utilisez le bandeau Acces equipe pour vous connecter.";
+      sessionHelp.classList.toggle("is-ok", Boolean(session));
+    }
   }
 
   button.addEventListener("click", async () => {
@@ -305,7 +321,7 @@ async function initJoinPage(){
     }
   });
 
-  leaveButton.addEventListener("click", () => {
+  changeButton.addEventListener("click", () => {
     clearSession();
     setNotice(notice, "Session equipe retiree de cet appareil.");
     render();
@@ -316,7 +332,7 @@ async function initJoinPage(){
     state = nextState;
     render();
   }).catch(() => {
-    setNotice(notice, "Liste locale affichee. Synchronisation Sheets indisponible.", true);
+    setNotice(notice, "Liste locale affichee. Synchronisation serveur indisponible.", true);
   });
 }
 
