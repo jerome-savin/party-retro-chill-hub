@@ -137,7 +137,7 @@ function call_escape_api(array $config, array $params): array
     $callback = 'phpAgentCb';
     $params['callback'] = $callback;
     $url = rtrim((string)$config['prch_api_url'], '?') . '?' . http_build_query($params);
-    $body = http_request('GET', $url);
+    $body = http_request('GET', $url, [], null, 'Apps Script');
 
     if (!preg_match('/^' . preg_quote($callback, '/') . '\((.*)\);?$/s', trim($body), $matches)) {
         throw new RuntimeException('Reponse Apps Script invalide: ' . summarize_remote_body($body), 502);
@@ -199,7 +199,7 @@ function call_openai_agent(array $config, string $team, array $history, string $
     $body = http_request('POST', 'https://api.openai.com/v1/responses', [
         'Authorization: Bearer ' . $config['openai_api_key'],
         'Content-Type: application/json',
-    ], json_encode($request, JSON_UNESCAPED_SLASHES));
+    ], json_encode($request, JSON_UNESCAPED_SLASHES), 'OpenAI');
 
     $decoded = json_decode($body, true);
     if (!is_array($decoded)) {
@@ -219,34 +219,52 @@ function call_openai_agent(array $config, string $team, array $history, string $
     ];
 }
 
-function http_request(string $method, string $url, array $headers = [], ?string $body = null): string
+function http_request(string $method, string $url, array $headers = [], ?string $body = null, string $service = 'service distant'): string
 {
     if (function_exists('curl_init')) {
-        $curl = curl_init($url);
-        curl_setopt_array($curl, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_CUSTOMREQUEST => $method,
-            CURLOPT_TIMEOUT => 30,
-            CURLOPT_HTTPHEADER => $headers,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_MAXREDIRS => 5,
-            CURLOPT_USERAGENT => 'party-retro-chill-hub/1.0',
-        ]);
-        if ($body !== null) {
-            curl_setopt($curl, CURLOPT_POSTFIELDS, $body);
-        }
-        $response = curl_exec($curl);
-        $status = (int)curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
-        $error = curl_error($curl);
-        curl_close($curl);
+        $lastResponse = '';
+        $lastStatus = 0;
+        $lastError = '';
 
-        if ($response === false || $error !== '') {
-            throw new RuntimeException('Erreur reseau: ' . $error, 502);
+        for ($attempt = 1; $attempt <= 3; $attempt++) {
+            $curl = curl_init($url);
+            curl_setopt_array($curl, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_CUSTOMREQUEST => $method,
+                CURLOPT_TIMEOUT => 30,
+                CURLOPT_HTTPHEADER => $headers,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_MAXREDIRS => 5,
+                CURLOPT_USERAGENT => 'party-retro-chill-hub/1.0',
+            ]);
+            if ($body !== null) {
+                curl_setopt($curl, CURLOPT_POSTFIELDS, $body);
+            }
+            $response = curl_exec($curl);
+            $lastStatus = (int)curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
+            $lastError = curl_error($curl);
+            curl_close($curl);
+
+            if ($response !== false) {
+                $lastResponse = (string)$response;
+            }
+
+            if ($response !== false && $lastError === '' && !should_retry_http_status($lastStatus)) {
+                break;
+            }
+
+            if ($attempt < 3 && ($response === false || $lastError !== '' || should_retry_http_status($lastStatus))) {
+                usleep($attempt * 500000);
+            }
         }
-        if ($status >= 400) {
-            throw new RuntimeException('Erreur HTTP distante: ' . $status, 502);
+
+        if ($lastResponse === '' && $lastError !== '') {
+            throw new RuntimeException('Erreur reseau ' . $service . ': ' . $lastError, 502);
         }
-        return (string)$response;
+        if ($lastStatus >= 400) {
+            throw new RuntimeException('Erreur HTTP ' . $service . ': ' . $lastStatus . ' - ' . summarize_remote_body($lastResponse), 502);
+        }
+        return $lastResponse;
     }
 
     $context = stream_context_create([
@@ -260,9 +278,14 @@ function http_request(string $method, string $url, array $headers = [], ?string 
     ]);
     $response = file_get_contents($url, false, $context);
     if ($response === false) {
-        throw new RuntimeException('Erreur reseau', 502);
+        throw new RuntimeException('Erreur reseau ' . $service, 502);
     }
     return $response;
+}
+
+function should_retry_http_status(int $status): bool
+{
+    return $status === 429 || ($status >= 500 && $status <= 599);
 }
 
 function extract_output_text(array $response): string
