@@ -12,6 +12,10 @@ const CHALLENGES = [
   { id: 7, title: "On SUPPORTe plus", clue: "Fragment 07: l'ingredient final transforme la reponse." }
 ];
 
+function challengeUrl(challenge){
+  return challenge.id === 6 ? "journaux.html" : `epreuve-${challenge.id}.html`;
+}
+
 function defaultState(){
   return { selectedTeam: "", teams: [] };
 }
@@ -235,7 +239,7 @@ async function initDashboard(){
     }).join("") : '<p class="empty">Aucune autre equipe a afficher.</p>';
     challengeGrid.innerHTML = CHALLENGES.map(challenge => {
       const done = isChallengeComplete(team, challenge.id);
-      return `<a class="challenge-card ${done ? "is-complete" : ""}" href="epreuve-${challenge.id}.html">
+      return `<a class="challenge-card ${done ? "is-complete" : ""}" href="${challengeUrl(challenge)}">
         <span class="challenge-kicker">Epreuve ${String(challenge.id).padStart(2, "0")}</span>
         <h3 class="challenge-title">${challenge.title}</h3>
         <p class="challenge-copy">${done ? "Fragment collecte." : "Fragment non collecte."}</p>
