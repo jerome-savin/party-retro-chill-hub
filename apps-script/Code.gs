@@ -64,9 +64,6 @@ function saveRegistration_(params) {
   if (!firstName) {
     throw new Error('Prenom requis');
   }
-  if (!email) {
-    throw new Error('Email requis');
-  }
 
   SpreadsheetApp.getActive().getSheetByName(SHEET_REGISTRATIONS).appendRow([
     new Date(),
