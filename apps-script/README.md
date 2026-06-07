@@ -1,77 +1,65 @@
-# API Google Sheets mutualisee
+# API Google Sheets
 
-Le site utilise deja un Web App Apps Script pour `inscription.html`.
-L'objectif est de garder cette meme URL et d'ajouter les routes de l'escape game.
+Ce dossier contient le code Apps Script qui sert de source de verite pour :
 
-URL actuellement configuree dans le site:
+- les inscriptions,
+- les equipes de l'escape game,
+- les mots de passe d'equipe,
+- les fragments collectes.
 
-```txt
-https://script.google.com/macros/s/AKfycbzLLcmDo0bCMj-GYcdLblfkYV9v4aCwr5YB5b-ezbK6u4vgQkRUbWiQXCWJZ-nsVydo/exec
+Le script Apps Script ne contient pas la logique OpenAI. L'epreuve 7 passe par `api/agent.php`, deployee sur l'hebergement PHP, puis ce PHP appelle Apps Script pour verifier la session d'equipe et enregistrer le fragment.
+
+## Installation Apps Script
+
+1. Ouvrir le Google Sheets existant.
+2. Aller dans `Extensions > Apps Script`.
+3. Copier le contenu de `Code.gs`.
+4. Executer `setupSheets()` une premiere fois.
+5. Dans `Project Settings > Script Properties`, ajouter :
+
+```text
+PRCH_ADMIN_PASSWORD=mot-de-passe-admin
 ```
 
-Elle est centralisee dans:
+6. Deployer en application web :
 
-```txt
-assets/api-config.js
+```text
+Execute as: Me
+Who has access: Anyone
 ```
 
-## 1. Mettre a jour l'Apps Script existant
+L'URL de deploiement doit rester celle configuree dans `assets/api-config.js`.
 
-1. Ouvrir le Google Sheet deja utilise pour les inscriptions.
-2. Aller dans `Extensions` > `Apps Script`.
-3. Remplacer le contenu de `Code.gs` par le contenu de `apps-script/Code.gs`.
-4. Enregistrer.
-5. Executer la fonction `setupSheets`.
-6. Accepter les autorisations si Google les redemande.
-7. Aller dans `Parametres du projet` > `Proprietes du script`.
-8. Ajouter une propriete:
-   - Nom: `PRCH_ADMIN_PASSWORD`
-   - Valeur: le mot de passe organisateur de ton choix
+## Configuration PHP pour l'epreuve 7
 
-Le script cree ou reutilise ces onglets:
+Le fichier `api/config.php` n'est pas versionne. Il est genere automatiquement par GitHub Actions pendant le deploiement FTP.
 
-- `Inscriptions`
-- `Escape_Teams`
-- `Escape_Progress`
+Ajouter ces secrets GitHub dans `Settings > Secrets and variables > Actions` :
 
-## 2. Redeployer le Web App existant
+```text
+OPENAI_API_KEY=sk-...
+PRCH_API_URL=https://script.google.com/macros/s/.../exec
+PRCH_AGENT_MODEL=gpt-4.1-mini
+PRCH_AGENT_FRAGMENT=SUPPORT-2002
+PRCH_AGENT_INSTRUCTIONS=...
+```
 
-1. Cliquer sur `Deployer` > `Gerer les deploiements`.
-2. Selectionner le deploiement Web App existant.
-3. Cliquer sur l'icone crayon.
-4. Choisir `Nouvelle version`.
-5. Verifier:
-   - Executer en tant que: `Moi`
-   - Qui a acces: `Tout le monde`
-6. Cliquer sur `Deployer`.
+`PRCH_AGENT_INSTRUCTIONS` doit decrire les criteres exacts de reussite de l'epreuve 7. Tant que ces criteres ne sont pas satisfaits, l'agent doit repondre sans fragment. Quand ils le sont, il renvoie le fragment et `api/agent.php` l'enregistre dans Sheets pour l'equipe connectee.
 
-L'URL `/exec` doit rester la meme si tu modifies le deploiement existant.
+## Actions escape disponibles
 
-## 3. Tester
+Les pages web utilisent l'endpoint Apps Script en JSONP avec le parametre `action` :
 
-### Inscription
+```text
+get
+joinTeam
+validateSession
+completeChallenge
+adminList
+adminCreateTeam
+adminSetPassword
+adminResetTeam
+adminDeleteTeam
+```
 
-1. Ouvrir `inscription.html`.
-2. Verifier que la liste des inscrits charge encore.
-3. Envoyer une inscription de test.
-
-### Escape game
-
-1. Ouvrir `escape.html`.
-2. Verifier que le dashboard affiche `Synchronisation Google Sheets active.`
-3. Ouvrir `admin-escape.html`.
-4. Charger l'admin avec `PRCH_ADMIN_PASSWORD`.
-5. Creer une equipe avec son mot de passe.
-6. Ouvrir `rejoindre-equipe.html` et rejoindre cette equipe.
-7. Ouvrir une epreuve et la valider.
-5. Verifier les onglets `Escape_Teams` et `Escape_Progress`.
-
-## Fonctionnement technique
-
-- Sans parametre `action`, l'API repond au module inscription.
-- Avec `action=get`, l'API expose le dashboard public.
-- Avec `action=joinTeam`, l'API verifie le mot de passe equipe et renvoie un token local.
-- Avec `action=completeChallenge`, l'API exige le token equipe avant d'ecrire la progression.
-- Avec `action=adminList`, `action=adminCreateTeam`, `action=adminSetPassword`, `action=adminResetTeam` ou `action=adminDeleteTeam`, l'API exige `PRCH_ADMIN_PASSWORD`.
-- Le site reste statique et communique avec Apps Script en JSONP pour les lectures/actions escape.
-- Les inscriptions continuent a utiliser `fetch(..., { mode: 'no-cors' })` pour l'envoi du formulaire.
+Les actions sensibles demandent soit `adminPassword`, soit `team` + `teamToken`.

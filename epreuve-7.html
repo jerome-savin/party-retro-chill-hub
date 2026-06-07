@@ -3,33 +3,160 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Epreuve 07 - Escape Game</title>
+  <title>Epreuve 07 - Agent Support</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="assets/escape.css"/>
+  <style>
+    .agent-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,340px);gap:1rem;align-items:start}
+    .agent-console{display:grid;grid-template-rows:minmax(360px,58vh) auto;gap:.8rem}
+    .agent-log{border:1px solid rgba(0,245,255,.24);border-radius:8px;background:rgba(7,5,15,.76);padding:1rem;overflow:auto;display:grid;align-content:start;gap:.7rem}
+    .message{max-width:86%;border:1px solid rgba(0,245,255,.18);border-radius:8px;padding:.7rem .8rem;line-height:1.45;color:rgba(238,240,255,.86);background:rgba(0,245,255,.045);white-space:pre-wrap}
+    .message.agent{justify-self:start}
+    .message.team{justify-self:end;border-color:rgba(255,0,204,.32);background:rgba(255,0,204,.08)}
+    .message.system{max-width:100%;justify-self:center;border-color:rgba(255,230,0,.32);background:rgba(255,230,0,.06);color:rgba(255,246,160,.92)}
+    .agent-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.6rem}
+    .agent-form textarea{min-height:3.2rem;max-height:9rem}
+    .agent-status{display:grid;gap:.7rem}
+    .fragment-result{display:none}
+    .fragment-result.is-visible{display:block}
+    @media (max-width:760px){.agent-layout,.agent-form{grid-template-columns:1fr}.message{max-width:100%}}
+  </style>
 </head>
 <body>
-<main class="shell" data-challenge-page data-challenge-id="7">
-  <div class="topline"><a class="nav-link" href="escape.html">Dashboard</a><span>Epreuve 07 // Fragment d'indice</span></div>
-  <section class="hero"><h1>Epreuve 07</h1><p class="subtitle">On SUPPORTe plus.</p></section>
-  <section class="page-layout">
-    <article class="brief">
-      <span class="challenge-kicker">Mission active</span>
-      <h2 data-challenge-title></h2>
-      <p>Ajoutez ici l'enigme, les consignes, les images ou les manipulations necessaires a cette epreuve.</p>
-      <div class="fragment-box"><strong>Fragment par defaut</strong><br/><span data-default-clue></span></div>
-    </article>
-    <aside class="panel">
-      <h2 class="panel-title">Validation</h2>
-      <div class="field"><label for="team-select">Equipe</label><select id="team-select" data-team-select></select></div>
-      <div class="field"><label for="fragment-note">Fragment obtenu</label><textarea id="fragment-note" data-fragment-note placeholder="Note, code, mot-cle ou indice collecte"></textarea></div>
-      <button type="button" data-complete-challenge>Valider l'epreuve</button>
+<main class="shell" data-agent-challenge>
+  <div class="topline"><a class="nav-link" href="escape.html">Dashboard</a><span>Epreuve 07 // Agent support</span></div>
+
+  <section class="hero">
+    <h1>Epreuve 07</h1>
+    <p class="subtitle">Discutez avec l'agent. Quand il confirme que votre equipe a reussi le defi, il fournit et valide le fragment.</p>
+  </section>
+
+  <section class="agent-layout">
+    <section class="panel agent-console">
+      <div class="agent-log" data-agent-log aria-live="polite"></div>
+      <div class="agent-form">
+        <textarea data-agent-input placeholder="Votre message a l'agent..." maxlength="900"></textarea>
+        <button type="button" data-agent-send>Envoyer</button>
+      </div>
+    </section>
+
+    <aside class="panel agent-status">
+      <h2 class="panel-title">Session</h2>
+      <p class="challenge-copy" data-session-state>Verification de l'equipe...</p>
+      <div class="fragment-box fragment-result" data-fragment-result>
+        <strong>Fragment</strong><br/>
+        <span data-fragment-value></span>
+      </div>
       <p class="notice" data-notice></p>
     </aside>
   </section>
 </main>
 <script src="assets/api-config.js"></script>
 <script src="assets/escape.js"></script>
+<script>
+const log = document.querySelector('[data-agent-log]');
+const input = document.querySelector('[data-agent-input]');
+const sendButton = document.querySelector('[data-agent-send]');
+const sessionState = document.querySelector('[data-session-state]');
+const notice = document.querySelector('[data-notice]');
+const fragmentResult = document.querySelector('[data-fragment-result]');
+const fragmentValue = document.querySelector('[data-fragment-value]');
+const history = [];
+const session = getSession();
+
+function addMessage(role, content){
+  const message = document.createElement('div');
+  message.className = `message ${role}`;
+  message.textContent = content;
+  log.appendChild(message);
+  log.scrollTop = log.scrollHeight;
+  if(role === 'agent' || role === 'team'){
+    history.push({ role: role === 'agent' ? 'assistant' : 'user', content });
+    while(history.length > 8){
+      history.shift();
+    }
+  }
+}
+
+function setInputEnabled(enabled){
+  input.disabled = !enabled;
+  sendButton.disabled = !enabled;
+}
+
+async function sendMessage(){
+  const text = input.value.trim();
+  if(!text || !session){
+    return;
+  }
+  input.value = '';
+  addMessage('team', text);
+  setInputEnabled(false);
+  setNotice(notice, 'L agent analyse votre reponse...');
+  if(typeof ensureLoader === 'function'){
+    ensureLoader();
+  }
+  if(typeof setLoading === 'function'){
+    setLoading(true);
+  }
+  try{
+    const response = await fetch('api/agent.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        team: session.team,
+        teamToken: session.teamToken,
+        message: text,
+        history: history.slice(0, -1)
+      })
+    });
+    const result = await response.json().catch(() => ({ ok: false, error: 'Reponse PHP invalide' }));
+    if(!response.ok || !result.ok){
+      throw new Error(result.error || 'Erreur agent PHP');
+    }
+    addMessage('agent', result.reply || 'Message recu.');
+    if(result.solved){
+      fragmentValue.textContent = result.fragment;
+      fragmentResult.classList.add('is-visible');
+      setNotice(notice, 'Defi valide. Fragment enregistre pour votre equipe.');
+      if(result.state){
+        const state = normalizeState({ ...result.state, selectedTeam: session.team });
+        saveLocalState(state);
+      }
+      return;
+    }
+    setNotice(notice, 'Dialogue en cours.');
+    setInputEnabled(true);
+    input.focus();
+  }catch(error){
+    addMessage('system', error.message);
+    setNotice(notice, error.message, true);
+    setInputEnabled(true);
+  }finally{
+    if(typeof setLoading === 'function'){
+      setLoading(false);
+    }
+  }
+}
+
+if(!session){
+  sessionState.textContent = 'Aucune equipe connectee sur cet appareil.';
+  addMessage('system', 'Rejoignez une equipe avec son mot de passe avant de dialoguer avec l agent.');
+  setInputEnabled(false);
+}else{
+  sessionState.textContent = `Equipe connectee: ${session.team}`;
+  addMessage('agent', 'Support temporel en ligne. Expliquez-moi votre piste, votre raisonnement ou votre reponse finale.');
+  setInputEnabled(true);
+}
+
+sendButton.addEventListener('click', sendMessage);
+input.addEventListener('keydown', event => {
+  if(event.key === 'Enter' && !event.shiftKey){
+    event.preventDefault();
+    sendMessage();
+  }
+});
+</script>
 </body>
 </html>

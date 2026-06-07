@@ -17,6 +17,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Create PHP API config
+        shell: bash
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          PRCH_API_URL: ${{ secrets.PRCH_API_URL }}
+          PRCH_AGENT_MODEL: ${{ secrets.PRCH_AGENT_MODEL }}
+          PRCH_AGENT_FRAGMENT: ${{ secrets.PRCH_AGENT_FRAGMENT }}
+          PRCH_AGENT_INSTRUCTIONS: ${{ secrets.PRCH_AGENT_INSTRUCTIONS }}
+        run: |
+          mkdir -p api
+          b64() { printf '%s' "$1" | base64 -w 0; }
+          cat > api/config.php <<PHP
+          <?php
+          return [
+              'openai_api_key' => base64_decode('$(b64 "$OPENAI_API_KEY")'),
+              'prch_api_url' => base64_decode('$(b64 "${PRCH_API_URL:-https://script.google.com/macros/s/AKfycbzLLcmDo0bCMj-GYcdLblfkYV9v4aCwr5YB5b-ezbK6u4vgQkRUbWiQXCWJZ-nsVydo/exec}")'),
+              'model' => base64_decode('$(b64 "${PRCH_AGENT_MODEL:-gpt-4.1-mini}")'),
+              'fragment' => base64_decode('$(b64 "${PRCH_AGENT_FRAGMENT:-SUPPORT-2002}")'),
+              'instructions' => base64_decode('$(b64 "$PRCH_AGENT_INSTRUCTIONS")'),
+          ];
+          PHP
+
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
