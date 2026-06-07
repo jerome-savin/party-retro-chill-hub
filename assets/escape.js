@@ -13,7 +13,7 @@ const CHALLENGES = [
 ];
 
 function challengeUrl(challenge){
-  return challenge.id === 6 ? "journaux.html" : `epreuve-${challenge.id}.html`;
+  return challenge.id === 6 ? "6-journaux.html" : `epreuve-${challenge.id}.html`;
 }
 
 function defaultState(){
