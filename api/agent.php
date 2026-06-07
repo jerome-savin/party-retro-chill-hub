@@ -140,7 +140,7 @@ function call_escape_api(array $config, array $params): array
     $body = http_request('GET', $url);
 
     if (!preg_match('/^' . preg_quote($callback, '/') . '\((.*)\);?$/s', trim($body), $matches)) {
-        throw new RuntimeException('Reponse Apps Script invalide', 502);
+        throw new RuntimeException('Reponse Apps Script invalide: ' . summarize_remote_body($body), 502);
     }
 
     $decoded = json_decode($matches[1], true);
@@ -228,6 +228,9 @@ function http_request(string $method, string $url, array $headers = [], ?string 
             CURLOPT_CUSTOMREQUEST => $method,
             CURLOPT_TIMEOUT => 30,
             CURLOPT_HTTPHEADER => $headers,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 5,
+            CURLOPT_USERAGENT => 'party-retro-chill-hub/1.0',
         ]);
         if ($body !== null) {
             curl_setopt($curl, CURLOPT_POSTFIELDS, $body);
@@ -277,6 +280,16 @@ function extract_output_text(array $response): string
     }
 
     throw new RuntimeException('Texte OpenAI introuvable', 502);
+}
+
+function summarize_remote_body(string $body): string
+{
+    $summary = preg_replace('/\s+/', ' ', strip_tags($body));
+    $summary = trim((string)$summary);
+    if ($summary === '') {
+        return 'reponse vide';
+    }
+    return substr($summary, 0, 180);
 }
 
 function default_instructions(string $fragment): string
