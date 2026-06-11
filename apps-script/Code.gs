@@ -1,4 +1,5 @@
 const SHEET_REGISTRATIONS = 'Inscriptions';
+const SHEET_PREDICTIONS = 'Pronostics_Organisateurs';
 const SHEET_TEAMS = 'Escape_Teams';
 const SHEET_PROGRESS = 'Escape_Progress';
 const DEFAULT_TEAMS = [];
@@ -8,6 +9,7 @@ const ESCAPE_STATE_CACHE_SECONDS = 60;
 
 function setupSheets() {
   setupRegistrationSheet_();
+  setupPredictionSheet_();
   setupEscapeSheets_();
 }
 
@@ -17,6 +19,7 @@ function doGet(event) {
 
   try {
     if (params.action) {
+      setupPredictionSheet_();
       if (params.action !== 'get') {
         setupEscapeSheets_();
       }
@@ -53,6 +56,15 @@ function setupRegistrationSheet_() {
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_REGISTRATIONS);
     sheet.appendRow(['createdAt', 'firstName', 'guests', 'email', 'phone', 'diet', 'comment', 'source']);
+  }
+}
+
+function setupPredictionSheet_() {
+  const ss = SpreadsheetApp.getActive();
+  let sheet = ss.getSheetByName(SHEET_PREDICTIONS);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_PREDICTIONS);
+    sheet.appendRow(['voterKey', 'voterName', 'suspect1', 'suspect2', 'createdAt', 'updatedAt']);
   }
 }
 
@@ -96,6 +108,15 @@ function readRegistrations_() {
 
 function handleEscapeAction_(params) {
   const action = params.action || 'get';
+
+  if (action === 'getPredictions') {
+    return readPredictions_();
+  }
+
+  if (action === 'savePrediction') {
+    savePrediction_(params.voterName, params.suspect1, params.suspect2);
+    return readPredictions_();
+  }
 
   if (action === 'get') {
     return readEscapeState_();
@@ -413,6 +434,59 @@ function completeEscapeChallenge_(team, challengeId, fragment) {
 
   sheet.appendRow([cleanTeam, challengeId, cleanFragment, new Date()]);
   invalidateEscapeCache_();
+}
+
+function savePrediction_(voterName, suspect1, suspect2) {
+  const cleanVoter = String(voterName || '').trim();
+  const cleanSuspect1 = String(suspect1 || '').trim();
+  const cleanSuspect2 = String(suspect2 || '').trim();
+
+  if (!cleanVoter) {
+    throw new Error('Nom du votant requis');
+  }
+  if (!cleanSuspect1 || !cleanSuspect2) {
+    throw new Error('Deux suspects sont requis');
+  }
+  if (cleanSuspect1 === cleanSuspect2) {
+    throw new Error('Choisissez deux suspects differents');
+  }
+
+  const voterKey = normalizeKey_(cleanVoter);
+  const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_PREDICTIONS);
+  const values = sheet.getDataRange().getValues();
+
+  for (let row = 2; row <= values.length; row++) {
+    if (String(values[row - 1][0] || '') === voterKey) {
+      sheet.getRange(row, 2, 1, 5).setValues([[
+        cleanVoter,
+        cleanSuspect1,
+        cleanSuspect2,
+        values[row - 1][4] || new Date(),
+        new Date()
+      ]]);
+      return;
+    }
+  }
+
+  sheet.appendRow([voterKey, cleanVoter, cleanSuspect1, cleanSuspect2, new Date(), new Date()]);
+}
+
+function readPredictions_() {
+  const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_PREDICTIONS);
+  const rows = sheet.getDataRange().getValues().slice(1);
+  return {
+    votes: rows
+      .filter(row => row[0] && row[1])
+      .map(row => ({
+        voterName: String(row[1] || ''),
+        suspects: [String(row[2] || ''), String(row[3] || '')].filter(Boolean),
+        updatedAt: row[5] instanceof Date ? row[5].toISOString() : String(row[5] || '')
+      }))
+  };
+}
+
+function normalizeKey_(value) {
+  return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
 function requireAdmin_(adminPassword) {

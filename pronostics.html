@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pronostics organisateurs - Party Retro Chill Hub</title>
+<link rel="icon" type="image/png" href="assets/favicons/favicon-prch.png"/>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Barlow+Condensed:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--cyan:#00f5ff;--magenta:#ff00cc;--yellow:#ffe600;--green:#00ff88;--deep:#07050f;--panel:#111026;--text:#e8eaff;--muted:#8b91b8;--danger:#ff4f6d}
+body{min-height:100vh;background:var(--deep);color:var(--text);font-family:'Share Tech Mono',monospace;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;background-image:linear-gradient(rgba(0,245,255,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(0,245,255,.055) 1px,transparent 1px);background-size:55px 55px;pointer-events:none}
+.shell{position:relative;z-index:1;width:min(1180px,100%);margin:0 auto;padding:2rem 1rem 4rem}
+.topline{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1.4rem;color:rgba(0,245,255,.7);font-size:.72rem;letter-spacing:.16em;text-transform:uppercase}
+.nav-link{display:inline-flex;align-items:center;min-height:2.4rem;border:1px solid rgba(0,245,255,.38);padding:.55rem .8rem;text-decoration:none;color:#fff;background:rgba(0,245,255,.06)}
+.hero{padding:1.2rem 0 1.5rem;border-bottom:1px solid rgba(0,245,255,.2);margin-bottom:1.3rem}
+h1{margin:0;font-family:'Barlow Condensed',Impact,sans-serif;font-size:clamp(2.7rem,9vw,6.2rem);line-height:.9;text-transform:uppercase;color:#fff;text-shadow:0 0 22px rgba(255,0,204,.55),0 0 38px rgba(0,245,255,.22)}
+.subtitle{max-width:820px;margin:.85rem 0 0;color:var(--muted);font-size:clamp(.92rem,2vw,1.08rem);line-height:1.55;letter-spacing:.04em}
+.layout{display:grid;grid-template-columns:minmax(280px,360px) 1fr;gap:1rem;align-items:start}
+.panel{border:1px solid rgba(0,245,255,.22);background:linear-gradient(180deg,rgba(17,16,38,.94),rgba(10,8,21,.95));box-shadow:0 0 24px rgba(0,245,255,.06);border-radius:8px;padding:1rem}
+.panel-title{margin:0 0 .85rem;font-family:'Barlow Condensed',Impact,sans-serif;font-size:1.55rem;text-transform:uppercase;letter-spacing:.04em;color:var(--cyan)}
+.field{display:grid;gap:.35rem;margin-bottom:.85rem}
+label{color:rgba(238,240,255,.76);font-size:.75rem;letter-spacing:.12em;text-transform:uppercase}
+input{width:100%;border:1px solid rgba(0,245,255,.28);border-radius:6px;background:#080713;color:var(--text);font:inherit;padding:.7rem .75rem;outline:none}
+input:focus{border-color:var(--yellow);box-shadow:0 0 0 3px rgba(255,230,0,.12)}
+button{border:1px solid rgba(255,0,204,.48);border-radius:6px;background:rgba(255,0,204,.1);color:var(--yellow);font:700 .82rem 'Share Tech Mono',Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;min-height:2.65rem;padding:.65rem .9rem;cursor:pointer}
+button:hover,button:focus-visible{border-color:var(--cyan);outline:none;background:rgba(0,245,255,.1)}
+button:disabled{cursor:not-allowed;opacity:.45}
+.notice{min-height:1.4rem;color:var(--green);margin-top:.75rem;line-height:1.45}
+.notice.is-error{color:var(--danger)}
+.suspect-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem}
+.suspect-card{position:relative;display:grid;grid-template-columns:82px minmax(0,1fr);gap:.75rem;align-items:center;border:1px solid rgba(0,245,255,.18);border-radius:8px;background:rgba(0,245,255,.035);padding:.7rem;text-align:left;color:inherit}
+.suspect-card.is-selected{border-color:rgba(0,255,136,.65);background:rgba(0,255,136,.08);box-shadow:0 0 18px rgba(0,255,136,.12)}
+.avatar{width:82px;aspect-ratio:1;border:1px solid rgba(255,230,0,.28);border-radius:8px;background:rgba(255,230,0,.06);display:grid;place-items:center;overflow:hidden}
+.avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.avatar span{font-family:'Barlow Condensed',Impact,sans-serif;font-size:2rem;color:var(--yellow);text-shadow:0 0 14px rgba(255,230,0,.55)}
+.suspect-name{display:block;font-family:'Barlow Condensed',Impact,sans-serif;font-size:1.45rem;line-height:1;text-transform:uppercase;color:#fff}
+.suspect-role{display:block;margin-top:.25rem;color:rgba(238,240,255,.58);font-size:.75rem;line-height:1.35}
+.vote-count{display:inline-flex;margin-top:.5rem;border:1px solid rgba(0,245,255,.25);border-radius:999px;padding:.22rem .48rem;color:var(--cyan);font-size:.68rem;text-transform:uppercase}
+.suspect-voters{display:block;margin-top:.45rem;color:rgba(238,240,255,.6);font-size:.72rem;line-height:1.35}
+.empty{color:rgba(238,240,255,.55);line-height:1.45}
+@media (max-width:880px){.layout{grid-template-columns:1fr}.suspect-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main class="shell">
+  <div class="topline">
+    <a class="nav-link" href="index.html">Accueil</a>
+    <span>PRCH // Bureau des soupcons</span>
+  </div>
+
+  <section class="hero">
+    <h1>Qui tire les ficelles ?</h1>
+    <p class="subtitle">Votez pour les deux membres du service que vous soupconnez d'etre les organisateurs. Les pronostics sont visibles par tout le monde.</p>
+  </section>
+
+  <section class="layout">
+    <aside class="panel">
+      <h2 class="panel-title">Votre vote</h2>
+      <div class="field">
+        <label for="voter-name">Votre nom ou pseudo</label>
+        <input id="voter-name" data-voter-name maxlength="80" autocomplete="name"/>
+      </div>
+      <p class="empty">Selectionnez exactement 2 suspects dans la liste. Si vous revotez avec le meme nom, votre pronostic precedent sera remplace.</p>
+      <button type="button" data-submit-vote style="margin-top:.9rem;width:100%">Valider mon pronostic</button>
+      <p class="notice" data-notice aria-live="polite"></p>
+    </aside>
+
+    <section class="panel">
+      <h2 class="panel-title">Classement des pronostics</h2>
+      <div class="suspect-grid" data-suspects></div>
+    </section>
+  </section>
+</main>
+
+<script src="assets/api-config.js"></script>
+<script>
+const API_URL = window.PRCH_API_URL || '';
+const SUSPECTS = [
+  { id: 'suspect-04', name: 'Annie', role: 'Service achats', photo: 'assets/suspects/33721422-a547-4447-9ed1-4e921ed3c24e_576.jpg' },
+  { id: 'suspect-18', name: 'Arno', role: 'Service achats', photo: 'assets/suspects/e38a1997-a1fc-476a-9215-7cf05a37992e_576.jpg' },
+  { id: 'suspect-08', name: 'Béa', role: 'Service achats', photo: 'assets/suspects/55b9dd62-8da4-4dce-bf18-c71a25ba712c_576.jpg' },
+  { id: 'suspect-17', name: 'BeBlock', role: 'Service achats', photo: 'assets/suspects/de2c16da-2acd-40e7-a56a-4af5207637d7_576.jpg' },
+  { id: 'suspect-19', name: 'BOU', role: 'Service achats', photo: 'assets/suspects/e54ddd24-19bf-4b4b-8e2e-d690e7220a6a_576.jpg' },
+  { id: 'suspect-16', name: 'Ien-ien', role: 'Service achats', photo: 'assets/suspects/da1152fe-0e63-48bd-9d1e-95ddeec5b22a_576.jpg' },
+  { id: 'suspect-02', name: 'James', role: 'Service achats', photo: 'assets/suspects/16bde6e3-4782-4322-9dd2-51addcd21e9b_576.jpg' },
+  { id: 'suspect-12', name: 'Jéjé', role: 'Service achats', photo: 'assets/suspects/9299026e-4225-4fc5-b215-01f628483c00_576.jpg' },
+  { id: 'suspect-03', name: 'Lauré', role: 'Service achats', photo: 'assets/suspects/1911282f-db92-4ccc-89ef-6cccacb98906_576.jpg' },
+  { id: 'suspect-09', name: 'Le ptit J', role: 'Service achats', photo: 'assets/suspects/5ca55911-219c-4ce6-a651-5a1bb53f2811_576.jpg' },
+  { id: 'suspect-07', name: 'Magnenet', role: 'Service achats', photo: 'assets/suspects/559c015f-2ce5-4213-a12e-768f9b111d75_576.jpg' },
+  { id: 'suspect-14', name: 'Malikoum', role: 'Service achats', photo: 'assets/suspects/ad56707f-054a-4f5b-852e-61e392ccc228_576.jpg' },
+  { id: 'suspect-01', name: 'Marina', role: 'Service achats', photo: 'assets/suspects/0e9bd765-df51-455b-b0f7-4b934033b779_576.jpg' },
+  { id: 'suspect-05', name: 'Maxito', role: 'Service achats', photo: 'assets/suspects/38af7cd9-4b35-404a-b57b-49d5dce0a5ce_576.jpg' },
+  { id: 'suspect-13', name: 'Pilou', role: 'Service achats', photo: 'assets/suspects/a64967cc-4ed1-4faf-90e1-b27747b8d777_576.jpg' },
+  { id: 'suspect-10', name: 'Pris', role: 'Service achats', photo: 'assets/suspects/6d51b0d3-445a-45e4-b57d-d4423e0acf3c_576.jpg' },
+  { id: 'suspect-06', name: 'Sambino', role: 'Service achats', photo: 'assets/suspects/4d1cc920-297d-4e9b-a299-2b52dc56c5a7_576.jpg' },
+  { id: 'suspect-15', name: 'StePH', role: 'Service achats', photo: 'assets/suspects/cc722903-11d6-487e-9f05-13b90d750a13_576.jpg' },
+  { id: 'suspect-11', name: 'Tonton du bled', role: 'Service achats', photo: 'assets/suspects/8f0c5aae-83c9-45cd-a1d1-9bddab3cae6e_576.jpg' },
+];
+
+const suspectsNode = document.querySelector('[data-suspects]');
+const voterName = document.querySelector('[data-voter-name]');
+const submitButton = document.querySelector('[data-submit-vote]');
+const notice = document.querySelector('[data-notice]');
+const selected = new Set();
+let votes = [];
+
+function setNotice(message, isError = false){
+  notice.textContent = message;
+  notice.classList.toggle('is-error', isError);
+}
+
+function escapeHtml(value){
+  return String(value).replace(/[&<>"']/g, char => ({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#039;'
+  }[char]));
+}
+
+function initials(name){
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase();
+}
+
+function apiRequest(action, params = {}){
+  return new Promise((resolve, reject) => {
+    if(!API_URL){
+      reject(new Error('Serveur non configure'));
+      return;
+    }
+    const callback = `prchPredict${Date.now()}${Math.floor(Math.random() * 10000)}`;
+    const query = new URLSearchParams({ action, callback });
+    Object.entries(params).forEach(([key, value]) => query.set(key, value == null ? '' : String(value)));
+    const script = document.createElement('script');
+    const timer = window.setTimeout(() => {
+      cleanup();
+      reject(new Error('Delai depasse avec le serveur'));
+    }, 12000);
+
+    function cleanup(){
+      window.clearTimeout(timer);
+      delete window[callback];
+      script.remove();
+    }
+
+    window[callback] = payload => {
+      cleanup();
+      if(payload && payload.ok){
+        resolve(payload.data || {});
+        return;
+      }
+      reject(new Error((payload && payload.error) || 'Erreur serveur'));
+    };
+    script.onerror = () => {
+      cleanup();
+      reject(new Error('Impossible de contacter le serveur'));
+    };
+    script.src = `${API_URL}?${query.toString()}`;
+    document.body.appendChild(script);
+  });
+}
+
+function tally(){
+  const bySuspect = new Map(SUSPECTS.map(suspect => [suspect.id, { ...suspect, count: 0, voters: [] }]));
+  votes.forEach(vote => {
+    vote.suspects.forEach(id => {
+      const suspect = bySuspect.get(id);
+      if(!suspect){
+        return;
+      }
+      suspect.count += 1;
+      suspect.voters.push(vote.voterName);
+    });
+  });
+  return Array.from(bySuspect.values()).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+}
+
+function renderSuspects(){
+  suspectsNode.innerHTML = tally().map(suspect => {
+    const isSelected = selected.has(suspect.id);
+    return `<button type="button" class="suspect-card ${isSelected ? 'is-selected' : ''}" data-suspect="${escapeHtml(suspect.id)}">
+      <span class="avatar">
+        <img src="${escapeHtml(suspect.photo)}" alt="${escapeHtml(suspect.name)}" onload="this.nextElementSibling.hidden=true;" onerror="this.remove();"/>
+        <span>${escapeHtml(initials(suspect.name))}</span>
+      </span>
+      <span>
+        <span class="suspect-name">${escapeHtml(suspect.name)}</span>
+        <span class="suspect-role">${escapeHtml(suspect.role)}</span>
+        <span class="vote-count">${suspect.count} vote${suspect.count > 1 ? 's' : ''}</span>
+        <span class="suspect-voters">${suspect.voters.length ? escapeHtml(suspect.voters.join(', ')) : 'Aucun votant'}</span>
+      </span>
+    </button>`;
+  }).join('');
+}
+
+function render(){
+  renderSuspects();
+}
+
+async function refresh(){
+  try{
+    const data = await apiRequest('getPredictions');
+    votes = Array.isArray(data.votes) ? data.votes : [];
+    render();
+  }catch(error){
+    setNotice(error.message, true);
+  }
+}
+
+suspectsNode.addEventListener('click', event => {
+  const card = event.target.closest('[data-suspect]');
+  if(!card){
+    return;
+  }
+  const id = card.dataset.suspect;
+  if(selected.has(id)){
+    selected.delete(id);
+  }else if(selected.size < 2){
+    selected.add(id);
+  }else{
+    setNotice('Vous devez choisir exactement 2 suspects.', true);
+  }
+  renderSuspects();
+});
+
+submitButton.addEventListener('click', async () => {
+  const name = voterName.value.trim();
+  const choices = Array.from(selected);
+  if(!name){
+    setNotice('Indiquez votre nom ou pseudo.', true);
+    return;
+  }
+  if(choices.length !== 2){
+    setNotice('Selectionnez exactement 2 suspects.', true);
+    return;
+  }
+
+  submitButton.disabled = true;
+  setNotice('Transmission du pronostic...');
+  try{
+    const data = await apiRequest('savePrediction', {
+      voterName: name,
+      suspect1: choices[0],
+      suspect2: choices[1]
+    });
+    votes = Array.isArray(data.votes) ? data.votes : [];
+    setNotice('Pronostic enregistre.');
+    render();
+  }catch(error){
+    setNotice(error.message, true);
+  }finally{
+    submitButton.disabled = false;
+  }
+});
+
+render();
+refresh();
+window.setInterval(refresh, 30000);
+</script>
+</body>
+</html>

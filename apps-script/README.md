@@ -3,6 +3,7 @@
 Ce dossier contient le code Apps Script qui sert de source de verite pour :
 
 - les inscriptions,
+- les pronostics organisateurs,
 - les equipes de l'escape game,
 - les mots de passe d'equipe,
 - les fragments collectes.
@@ -52,6 +53,8 @@ Les pages web utilisent l'endpoint Apps Script en JSONP avec le parametre `actio
 
 ```text
 get
+getPredictions
+savePrediction
 joinTeam
 validateSession
 completeChallenge
