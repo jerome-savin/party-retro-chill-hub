@@ -1,9 +1,9 @@
 name: Deploy via FTP
 
 on:
-  push:
-    branches:
-      - main
+  schedule:
+    # Mondays at 09:45 Europe/Paris during summer time (07:45 UTC).
+    - cron: "45 7 * * 1"
   workflow_dispatch:
 
 jobs:
