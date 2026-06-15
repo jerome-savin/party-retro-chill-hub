@@ -4,6 +4,9 @@ Ce dossier contient le code Apps Script qui sert de source de verite pour :
 
 - les inscriptions,
 - les pronostics organisateurs,
+- les comptes participants,
+- le chat participants / organisateurs,
+- les journaux de notifications,
 - les equipes de l'escape game,
 - les mots de passe d'equipe,
 - les fragments collectes.
@@ -20,6 +23,9 @@ Le script Apps Script ne contient pas la logique OpenAI. L'epreuve 7 passe par `
 
 ```text
 PRCH_ADMIN_PASSWORD=mot-de-passe-admin
+PRCH_SITE_URL=https://party-retro-chill-hub.fr
+PRCH_MAIL_API_URL=https://party-retro-chill-hub.fr/api/mail.php
+PRCH_MAIL_API_KEY=la-meme-cle-que-le-secret-github-MAIL_API_KEY
 ```
 
 6. Deployer en application web :
@@ -75,6 +81,18 @@ curl -X POST https://party-retro-chill-hub.fr/api/mail.php \
 Les pages web utilisent l'endpoint Apps Script en JSONP avec le parametre `action` :
 
 ```text
+userRegister
+userLogin
+userLookupAvatar
+requestPasswordReset
+resetPassword
+validateUserSession
+userUpdatePreferences
+listParticipants
+chatList
+chatPost
+adminCreateUser
+adminNotifySiteUpdate
 get
 getPredictions
 savePrediction
@@ -89,3 +107,18 @@ adminDeleteTeam
 ```
 
 Les actions sensibles demandent soit `adminPassword`, soit `team` + `teamToken`.
+Les comptes participants utilisent le pseudo comme `username`, avec `password`, `email`, `phone`, `notifyByEmail` et `avatar` a la creation. Ensuite `username` + `userToken` permettent de verifier la session locale.
+
+Pour le rattrapage des personnes deja inscrites ou ayant deja vote, `adminCreateUser` permet de creer un compte sans mot de passe depuis Sheets/API. Le participant choisit ensuite sa photo sur `connexion.html`, utilise "mot de passe oublie", recoit un email via OVH et cree son mot de passe.
+
+Pour le mot de passe oublie, `requestPasswordReset` recoit `identifier` et `resetUrl`, puis envoie un email si un compte actif correspond au pseudo ou a l'adresse mail. Le lien contient un token valable 30 minutes. `resetPassword` recoit ensuite `token` et `password`, met a jour le mot de passe et invalide le token.
+
+Le chat utilise `chatList` et `chatPost`. Les notifications mail partent via `api/mail.php`, jamais via Gmail, si `notifyByEmail` est actif pour le destinataire.
+Les messages prives des participants sont toujours adresses au compte special `organisateurs`. Creez donc un compte participant avec le pseudo `organisateurs` pour que les organisateurs puissent lire ces messages et repondre en prive.
+
+`admin-communications.html` permet de :
+
+- precreer un compte sans mot de passe pour une personne deja inscrite ou ayant deja vote ;
+- envoyer une notification globale aux participants ayant active les notifications.
+
+Pour precreer un compte, renseigner le pseudo, l'email et le chemin de la photo (`assets/avatar/...jpg`). Le participant choisira ensuite sa photo sur `connexion.html`, puis utilisera "mot de passe oublie" pour definir son mot de passe.

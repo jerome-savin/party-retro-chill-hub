@@ -9,11 +9,14 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--cyan:#00f5ff;--magenta:#ff00cc;--yellow:#ffe600;--green:#00ff88;--deep:#07050f;--panel:#111026;--text:#e8eaff;--muted:#8b91b8;--danger:#ff4f6d}
+*[hidden]{display:none!important}
 body{min-height:100vh;background:var(--deep);color:var(--text);font-family:'Share Tech Mono',monospace;overflow-x:hidden}
 body::before{content:"";position:fixed;inset:0;background-image:linear-gradient(rgba(0,245,255,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(0,245,255,.055) 1px,transparent 1px);background-size:55px 55px;pointer-events:none}
 .shell{position:relative;z-index:1;width:min(1180px,100%);margin:0 auto;padding:2rem 1rem 4rem}
 .topline{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1.4rem;color:rgba(0,245,255,.7);font-size:.72rem;letter-spacing:.16em;text-transform:uppercase}
 .nav-link{display:inline-flex;align-items:center;min-height:2.4rem;border:1px solid rgba(0,245,255,.38);padding:.55rem .8rem;text-decoration:none;color:#fff;background:rgba(0,245,255,.06)}
+.account-cta{width:100%;justify-content:center;margin:.85rem 0 0;border-color:rgba(255,230,0,.5);color:var(--yellow);background:rgba(255,230,0,.07);box-shadow:0 0 16px rgba(255,230,0,.12);font-family:'Barlow Condensed',Impact,sans-serif;font-weight:900;font-size:1.1rem;letter-spacing:.08em}
+.account-cta:hover,.account-cta:focus-visible{border-color:var(--cyan);color:#fff;background:rgba(0,245,255,.1);outline:none}
 .hero{padding:1.2rem 0 1.5rem;border-bottom:1px solid rgba(0,245,255,.2);margin-bottom:1.3rem}
 h1{margin:0;font-family:'Barlow Condensed',Impact,sans-serif;font-size:clamp(2.7rem,9vw,6.2rem);line-height:.9;text-transform:uppercase;color:#fff;text-shadow:0 0 22px rgba(255,0,204,.55),0 0 38px rgba(0,245,255,.22)}
 .subtitle{max-width:820px;margin:.85rem 0 0;color:var(--muted);font-size:clamp(.92rem,2vw,1.08rem);line-height:1.55;letter-spacing:.04em}
@@ -29,11 +32,14 @@ button:hover,button:focus-visible{border-color:var(--cyan);outline:none;backgrou
 button:disabled{cursor:not-allowed;opacity:.45}
 .notice{min-height:1.4rem;color:var(--green);margin-top:.75rem;line-height:1.45}
 .notice.is-error{color:var(--danger)}
+.session-preview{border:1px solid rgba(0,245,255,.22);border-radius:8px;background:rgba(0,245,255,.05);padding:.85rem;margin-bottom:.85rem}
+.vote-session-label{display:block;color:rgba(0,245,255,.68);font-size:.68rem;letter-spacing:.16em;text-transform:uppercase}
+.session-preview strong{display:block;margin-top:.35rem;font-family:'Barlow Condensed',Impact,sans-serif;font-size:2rem;line-height:1;text-transform:uppercase;color:#fff;text-shadow:0 0 14px rgba(0,245,255,.35)}
 .suspect-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem}
 .suspect-card{position:relative;display:grid;grid-template-columns:82px minmax(0,1fr);gap:.75rem;align-items:center;border:1px solid rgba(0,245,255,.18);border-radius:8px;background:rgba(0,245,255,.035);padding:.7rem;text-align:left;color:inherit}
 .suspect-card.is-selected{border-color:rgba(0,255,136,.65);background:rgba(0,255,136,.08);box-shadow:0 0 18px rgba(0,255,136,.12)}
 .avatar{width:82px;aspect-ratio:1;border:1px solid rgba(255,230,0,.28);border-radius:8px;background:rgba(255,230,0,.06);display:grid;place-items:center;overflow:hidden}
-.avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.avatar img{width:100%;height:100%;object-fit:cover;object-position:center 28%;display:block}
 .avatar span{font-family:'Barlow Condensed',Impact,sans-serif;font-size:2rem;color:var(--yellow);text-shadow:0 0 14px rgba(255,230,0,.55)}
 .suspect-name{display:block;font-family:'Barlow Condensed',Impact,sans-serif;font-size:1.45rem;line-height:1;text-transform:uppercase;color:#fff}
 .suspect-role{display:block;margin-top:.25rem;color:rgba(238,240,255,.58);font-size:.75rem;line-height:1.35}
@@ -58,11 +64,12 @@ button:disabled{cursor:not-allowed;opacity:.45}
   <section class="layout">
     <aside class="panel">
       <h2 class="panel-title">Votre vote</h2>
-      <div class="field">
-        <label for="voter-name">Votre nom ou pseudo</label>
-        <input id="voter-name" data-voter-name maxlength="80" autocomplete="name"/>
+      <div class="session-preview" data-vote-session>
+        <span class="vote-session-label">Compte</span>
+        <strong data-vote-user>Non connecte</strong>
       </div>
-      <p class="empty">Selectionnez exactement 2 suspects dans la liste. Si vous revotez avec le meme nom, votre pronostic precedent sera remplace.</p>
+      <p class="empty" data-vote-help>Connectez-vous avec Mon compte pour voter. Le classement reste visible sans connexion.</p>
+      <a class="nav-link account-cta" href="connexion.html?next=pronostics.html" data-login-link>Mon compte</a>
       <button type="button" data-submit-vote style="margin-top:.9rem;width:100%">Valider mon pronostic</button>
       <p class="notice" data-notice aria-live="polite"></p>
     </aside>
@@ -75,6 +82,7 @@ button:disabled{cursor:not-allowed;opacity:.45}
 </main>
 
 <script src="assets/api-config.js"></script>
+<script src="assets/auth.js"></script>
 <script>
 const API_URL = window.PRCH_API_URL || '';
 const SUSPECTS = [
@@ -100,11 +108,14 @@ const SUSPECTS = [
 ];
 
 const suspectsNode = document.querySelector('[data-suspects]');
-const voterName = document.querySelector('[data-voter-name]');
 const submitButton = document.querySelector('[data-submit-vote]');
 const notice = document.querySelector('[data-notice]');
+const voteUser = document.querySelector('[data-vote-user]');
+const voteHelp = document.querySelector('[data-vote-help]');
+const loginLink = document.querySelector('[data-login-link]');
 const selected = new Set();
 let votes = [];
+let userSession = null;
 
 function setNotice(message, isError = false){
   notice.textContent = message;
@@ -197,6 +208,15 @@ function renderSuspects(){
 }
 
 function render(){
+  userSession = window.PRCH_AUTH ? PRCH_AUTH.getSession() : null;
+  const displayName = userSession ? (userSession.displayName || userSession.username) : '';
+  voteUser.textContent = userSession ? displayName : 'Non connecte';
+  voteHelp.textContent = userSession
+    ? 'Selectionnez exactement 2 suspects. Votre vote sera enregistre avec votre pseudo.'
+    : 'Connectez-vous avec Mon compte pour voter. Le classement reste visible sans connexion.';
+  loginLink.hidden = Boolean(userSession);
+  submitButton.hidden = !userSession;
+  submitButton.disabled = !userSession;
   renderSuspects();
 }
 
@@ -227,10 +247,11 @@ suspectsNode.addEventListener('click', event => {
 });
 
 submitButton.addEventListener('click', async () => {
-  const name = voterName.value.trim();
+  userSession = window.PRCH_AUTH ? PRCH_AUTH.getSession() : null;
+  const name = userSession ? (userSession.displayName || userSession.username) : '';
   const choices = Array.from(selected);
-  if(!name){
-    setNotice('Indiquez votre nom ou pseudo.', true);
+  if(!userSession){
+    setNotice('Connectez-vous avec Mon compte avant de voter.', true);
     return;
   }
   if(choices.length !== 2){

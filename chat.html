@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Canal organisateurs - Party Retro Chill Hub</title>
+  <link rel="icon" type="image/png" href="assets/favicons/favicon-prch.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="assets/escape.css"/>
+  <style>
+    .chat-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,340px);gap:1rem;align-items:start}
+    .chat-feed{display:grid;gap:.7rem;max-height:62vh;overflow:auto;padding-right:.25rem}
+    select,textarea{width:100%;border:1px solid rgba(0,245,255,.28);border-radius:6px;background:#080713;color:var(--text);font:inherit;padding:.7rem .75rem;outline:none}
+    select:focus,textarea:focus{border-color:var(--yellow);box-shadow:0 0 0 3px rgba(255,230,0,.12)}
+    .chat-message{display:grid;grid-template-columns:42px minmax(0,1fr);gap:.7rem;border:1px solid rgba(0,245,255,.2);border-radius:8px;background:rgba(0,245,255,.045);padding:.85rem}
+    .chat-message.is-private{border-color:rgba(255,230,0,.38);background:rgba(255,230,0,.055)}
+    .chat-avatar{width:42px;aspect-ratio:1;border:1px solid rgba(0,245,255,.35);border-radius:999px;background:rgba(0,245,255,.08);overflow:hidden;display:grid;place-items:center;color:var(--yellow);font-family:'Barlow Condensed',Impact,sans-serif;font-size:1.2rem;text-transform:uppercase}
+    .chat-avatar img{width:100%;height:100%;object-fit:cover;object-position:center 28%;display:block}
+    .chat-meta{display:flex;flex-wrap:wrap;gap:.45rem .7rem;align-items:center;color:rgba(238,240,255,.58);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em}
+    .chat-author{font-family:'Barlow Condensed',Impact,sans-serif;font-size:1.25rem;color:#fff;text-transform:uppercase}
+    .chat-body{margin-top:.45rem;color:rgba(238,240,255,.86);line-height:1.5;white-space:pre-wrap}
+    .mention{display:inline-block;border:1px solid rgba(0,255,136,.38);border-radius:999px;background:rgba(0,255,136,.1);color:var(--green);padding:0 .28rem;font-weight:700}
+    .chat-form{display:grid;gap:.8rem}
+    .chat-form textarea{min-height:8rem;resize:vertical}
+    .message-mode{display:grid;grid-template-columns:1fr 1fr;gap:.55rem}
+    .mode-choice{display:grid;gap:.2rem;border:1px solid rgba(0,245,255,.22);border-radius:8px;background:rgba(0,245,255,.045);padding:.65rem;cursor:pointer}
+    .mode-choice.is-selected{border-color:rgba(0,255,136,.58);background:rgba(0,255,136,.08);box-shadow:0 0 16px rgba(0,255,136,.12)}
+    .mode-choice input{position:absolute;opacity:0;pointer-events:none}
+    .mode-title{font-family:'Barlow Condensed',Impact,sans-serif;font-size:1.25rem;line-height:1;text-transform:uppercase;color:#fff}
+    .mode-help{color:rgba(238,240,255,.6);font-size:.75rem;line-height:1.35}
+    .participant-list{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.6rem}
+    .participant-chip{border:1px solid rgba(0,245,255,.25);border-radius:999px;background:rgba(0,245,255,.05);padding:.24rem .5rem;color:var(--cyan);font-size:.72rem}
+    @media (max-width:820px){.chat-layout{grid-template-columns:1fr}.chat-feed{max-height:none}.chat-tools{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<main class="shell">
+  <div class="topline">
+    <a class="nav-link" href="index.html">Dashboard</a>
+    <span>PRCH // Canal participants</span>
+    <button type="button" class="secondary" data-auth-logout>Se deconnecter</button>
+  </div>
+
+  <section class="hero">
+    <h1>Canal organisateurs</h1>
+    <p class="subtitle">Ecrivez aux organisateurs en public ou en prive. Mentionnez quelqu'un avec son pseudo, par exemple <strong>@pseudo</strong>.</p>
+  </section>
+
+  <section class="chat-layout">
+    <section class="panel">
+      <h2>Messages</h2>
+      <div class="chat-feed" data-chat-feed>
+        <p class="empty">Chargement des messages...</p>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <h2>Nouveau message</h2>
+      <p class="muted">Connecte en tant que <strong data-user-name></strong>.</p>
+      <form class="chat-form" data-chat-form>
+        <div class="message-mode" data-message-mode>
+          <label class="mode-choice">
+            <input type="radio" name="visibility" value="public" checked data-visibility/>
+            <span class="mode-title">Public</span>
+            <span class="mode-help">Visible par tous. Mentions possibles avec @pseudo.</span>
+          </label>
+          <label class="mode-choice">
+            <input type="radio" name="visibility" value="private" data-visibility/>
+            <span class="mode-title">Aux organisateurs</span>
+            <span class="mode-help">Message prive transmis uniquement aux organisateurs.</span>
+          </label>
+        </div>
+        <label class="field" data-recipient-field hidden>
+          <span>Repondre a</span>
+          <select name="recipientUsername" data-recipient></select>
+        </label>
+        <p class="empty" data-mode-note>Message public : vous pouvez mentionner quelqu'un avec @pseudo.</p>
+        <label class="field">
+          <span>Message</span>
+          <textarea name="message" required maxlength="1200" placeholder="Votre message..."></textarea>
+        </label>
+        <button type="submit">Envoyer</button>
+      </form>
+      <p class="notice" data-chat-notice aria-live="polite"></p>
+
+      <h2 style="margin-top:1.2rem">Participants</h2>
+      <div class="participant-list" data-participants></div>
+    </aside>
+  </section>
+</main>
+
+<script src="assets/api-config.js"></script>
+<script src="assets/auth.js"></script>
+<script>
+const feed = document.querySelector('[data-chat-feed]');
+const form = document.querySelector('[data-chat-form]');
+const notice = document.querySelector('[data-chat-notice]');
+const visibilityInputs = document.querySelectorAll('[data-visibility]');
+const recipientField = document.querySelector('[data-recipient-field]');
+const recipientSelect = document.querySelector('[data-recipient]');
+const modeNote = document.querySelector('[data-mode-note]');
+const participantsNode = document.querySelector('[data-participants]');
+const ORGANIZER_USERNAME = 'organisateurs';
+let participants = [];
+
+function setNotice(message, isError = false){
+  notice.textContent = message;
+  notice.classList.toggle('is-error', isError);
+}
+
+function escapeHtml(value){
+  return String(value || '').replace(/[&<>"']/g, char => ({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#039;'
+  }[char]));
+}
+
+function formatDateTime(value){
+  const date = new Date(value);
+  if(Number.isNaN(date.getTime())){
+    return '';
+  }
+  return new Intl.DateTimeFormat('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date);
+}
+
+function renderMessageText(value){
+  return escapeHtml(value).replace(/(^|\s)@([\p{L}\p{N}_.-]+)/gu, (match, prefix, username) => (
+    `${prefix}<span class="mention">@${username}</span>`
+  ));
+}
+
+function initials(name){
+  return String(name || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase();
+}
+
+function messageAvatar(item){
+  const session = PRCH_AUTH.getSession();
+  if(item.authorAvatar){
+    return item.authorAvatar;
+  }
+  if(session && item.authorUsername === session.username){
+    return session.avatar || '';
+  }
+  return '';
+}
+
+function sessionParams(){
+  const session = PRCH_AUTH.getSession();
+  return {
+    username: session ? session.username : '',
+    userToken: session ? session.userToken : ''
+  };
+}
+
+function renderParticipants(){
+  const session = PRCH_AUTH.getSession();
+  const current = session ? session.username : '';
+  const isOrganizer = current === ORGANIZER_USERNAME;
+  const options = participants
+    .filter(participant => participant.username !== current)
+    .map(participant => `<option value="${escapeHtml(participant.username)}">${escapeHtml(participant.displayName)}</option>`);
+  recipientSelect.innerHTML = options.join('');
+  recipientSelect.disabled = !isOrganizer;
+  participantsNode.innerHTML = participants
+    .map(participant => `<span class="participant-chip">@${escapeHtml(participant.username)}</span>`)
+    .join('');
+}
+
+function updatePrivateControls(){
+  const session = PRCH_AUTH.getSession();
+  const selectedVisibility = form.querySelector('[name="visibility"]:checked').value;
+  const isPrivate = selectedVisibility === 'private';
+  const isOrganizer = session && session.username === ORGANIZER_USERNAME;
+  document.querySelectorAll('.mode-choice').forEach(choice => {
+    const input = choice.querySelector('input');
+    choice.classList.toggle('is-selected', input.checked);
+  });
+  recipientField.hidden = !isPrivate || !isOrganizer;
+  recipientSelect.disabled = !isPrivate || !isOrganizer;
+  modeNote.textContent = isPrivate
+    ? (isOrganizer ? 'Reponse privee : choisissez le participant a qui repondre.' : 'Message prive : il sera transmis uniquement aux organisateurs.')
+    : 'Message public : vous pouvez mentionner quelqu un avec @pseudo.';
+}
+
+function renderMessages(messages){
+  if(!messages.length){
+    feed.innerHTML = '<p class="empty">Aucun message pour le moment.</p>';
+    return;
+  }
+  feed.innerHTML = messages.map(item => {
+    const avatar = messageAvatar(item);
+    return `
+      <article class="chat-message ${item.visibility === 'private' ? 'is-private' : ''}">
+        <span class="chat-avatar">
+          ${avatar ? `<img src="${escapeHtml(avatar)}" alt="${escapeHtml(item.authorName)}"/>` : escapeHtml(initials(item.authorName))}
+        </span>
+        <div>
+          <div class="chat-meta">
+            <strong class="chat-author">${escapeHtml(item.authorName)}</strong>
+            <span>${escapeHtml(formatDateTime(item.createdAt))}</span>
+            <span>${item.visibility === 'private' ? 'Prive' : 'Public'}</span>
+            ${item.recipientName ? `<span>vers ${escapeHtml(item.recipientName)}</span>` : ''}
+          </div>
+          <div class="chat-body">${renderMessageText(item.message)}</div>
+        </div>
+      </article>
+    `;
+  }).join('');
+  feed.scrollTop = feed.scrollHeight;
+}
+
+async function refreshChat(){
+  try{
+    const data = await PRCH_AUTH.request('chatList', sessionParams());
+    participants = Array.isArray(data.participants) ? data.participants : [];
+    renderParticipants();
+    renderMessages(Array.isArray(data.messages) ? data.messages : []);
+  }catch(error){
+    setNotice(error.message, true);
+  }
+}
+
+visibilityInputs.forEach(input => {
+  input.addEventListener('change', updatePrivateControls);
+});
+
+form.addEventListener('submit', async event => {
+  event.preventDefault();
+  const button = form.querySelector('button[type="submit"]');
+  const data = Object.fromEntries(new FormData(form).entries());
+  button.disabled = true;
+  setNotice('Envoi au serveur...');
+  try{
+    const response = await PRCH_AUTH.request('chatPost', {
+      ...sessionParams(),
+      visibility: data.visibility,
+      recipientUsername: data.visibility === 'private' && PRCH_AUTH.getSession().username === ORGANIZER_USERNAME && data.recipientUsername ? data.recipientUsername : '',
+      message: data.message
+    });
+    form.reset();
+    updatePrivateControls();
+    participants = Array.isArray(response.participants) ? response.participants : participants;
+    renderParticipants();
+    renderMessages(Array.isArray(response.messages) ? response.messages : []);
+    setNotice('Message envoye.');
+  }catch(error){
+    setNotice(error.message, true);
+  }finally{
+    button.disabled = false;
+  }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  updatePrivateControls();
+  setTimeout(refreshChat, 250);
+});
+</script>
+</body>
+</html>

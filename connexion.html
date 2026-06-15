@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Connexion - Party Retro Chill Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="assets/escape.css"/>
+  <style>
+    .auth-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,380px);gap:1rem;align-items:start}
+    .auth-card{display:grid;gap:.85rem}
+    .auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:.45rem}
+    .auth-tabs[hidden]{display:none}
+    .auth-tabs button{min-height:2.4rem}
+    .auth-tabs button.is-active{border-color:var(--green);color:var(--green);background:rgba(0,255,136,.08)}
+    .auth-form{display:grid;gap:.8rem}
+    .auth-form[hidden]{display:none}
+    .link-button{justify-self:start;border:0;background:transparent;color:var(--cyan);padding:0;font-family:inherit;text-decoration:underline;text-underline-offset:.18rem;cursor:pointer}
+    .link-button:hover{color:var(--green)}
+    .auth-note{color:rgba(238,240,255,.7);line-height:1.55}
+    .session-preview{border:1px solid rgba(0,255,136,.42);border-radius:8px;background:rgba(0,255,136,.08);padding:1rem}
+    .check-field{display:flex;align-items:flex-start;gap:.6rem;color:rgba(238,240,255,.76);line-height:1.45}
+    .check-field input{width:auto;margin-top:.18rem}
+    .check-field span{font-size:.86rem}
+    .avatar-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.45rem}
+    .avatar-choice{position:relative;border:1px solid rgba(0,245,255,.25);border-radius:8px;background:rgba(0,245,255,.04);padding:.18rem;aspect-ratio:1;min-height:0}
+    .avatar-choice img{width:100%;height:100%;object-fit:cover;object-position:center 28%;border-radius:6px;display:block}
+    .avatar-choice.is-selected{border-color:var(--green);box-shadow:0 0 16px rgba(0,255,136,.24)}
+    .avatar-choice.is-selected::after{content:"OK";position:absolute;right:.25rem;bottom:.25rem;border-radius:999px;background:rgba(0,255,136,.92);color:#07100b;font-size:.58rem;font-weight:900;padding:.12rem .28rem}
+    .account-avatar{width:68px;aspect-ratio:1;border:1px solid rgba(0,245,255,.35);border-radius:999px;object-fit:cover;object-position:center 28%;box-shadow:0 0 18px rgba(0,245,255,.16)}
+    .identity-card{border:1px solid rgba(0,255,136,.35);border-radius:8px;background:rgba(0,255,136,.07);padding:.8rem;color:rgba(238,240,255,.82);line-height:1.45}
+    .identity-card strong{display:block;font-family:'Barlow Condensed',Impact,sans-serif;font-size:1.8rem;line-height:1;color:#fff;text-transform:uppercase}
+    @media (max-width:760px){.auth-layout{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<main class="shell">
+  <div class="topline">
+    <span>PRCH // Acces participant</span>
+    <span>Session securisee</span>
+  </div>
+
+  <section class="hero">
+    <h1>Connexion participant</h1>
+    <p class="subtitle">Connectez-vous avec votre compte pour acceder au site, aux inscriptions et aux epreuves.</p>
+  </section>
+
+  <section class="auth-layout">
+    <section class="panel auth-card">
+      <div class="field">
+        <label>Choisissez votre photo</label>
+        <input type="hidden" name="avatar" data-avatar-value required/>
+        <div class="avatar-grid" data-avatar-grid></div>
+      </div>
+
+      <div class="identity-card" data-identity-card hidden>
+        <span data-identity-status></span>
+        <strong data-identity-name></strong>
+      </div>
+
+      <div class="auth-tabs" role="tablist" aria-label="Mode de connexion" hidden>
+        <button type="button" class="is-active" data-auth-mode="login">Connexion</button>
+        <button type="button" class="secondary" data-auth-mode="register">Creation</button>
+      </div>
+
+      <form class="auth-form" data-login-form hidden>
+        <input id="login-username" name="username" type="hidden" autocomplete="username" required maxlength="60"/>
+        <div class="field">
+          <label for="login-password">Mot de passe</label>
+          <input id="login-password" name="password" type="password" autocomplete="current-password" required maxlength="80"/>
+        </div>
+        <button type="submit">Se connecter</button>
+        <button type="button" class="link-button" data-forgot-link>Mot de passe oublie ?</button>
+      </form>
+
+      <form class="auth-form" data-register-form hidden>
+        <div class="field">
+          <label for="register-username">Pseudo reconnaissable</label>
+          <input id="register-username" name="username" autocomplete="username" required minlength="3" maxlength="60"/>
+        </div>
+        <div class="field">
+          <label for="register-email">Adresse mail</label>
+          <input id="register-email" name="email" type="email" autocomplete="email" required maxlength="120"/>
+        </div>
+        <label class="check-field" for="register-notify">
+          <input id="register-notify" name="notifyByEmail" type="checkbox" value="true"/>
+          <span>Je souhaite recevoir des notifications mail lors des nouveautes sur le site.</span>
+        </label>
+        <div class="field">
+          <label for="register-phone">Numero de telephone</label>
+          <input id="register-phone" name="phone" type="tel" autocomplete="tel" required maxlength="40"/>
+        </div>
+        <div class="field">
+          <label for="register-password">Mot de passe</label>
+          <input id="register-password" name="password" type="password" autocomplete="new-password" required minlength="4" maxlength="80"/>
+        </div>
+        <button type="submit">Creer mon compte</button>
+      </form>
+
+      <form class="auth-form" data-forgot-form hidden>
+        <div class="field">
+          <label for="forgot-identifier">Pseudo ou adresse mail</label>
+          <input id="forgot-identifier" name="identifier" autocomplete="username" required maxlength="120"/>
+        </div>
+        <button type="submit">Recevoir le lien</button>
+        <button type="button" class="link-button" data-back-login>Retour a la connexion</button>
+      </form>
+
+      <form class="auth-form" data-reset-form hidden>
+        <div class="field">
+          <label for="reset-password">Nouveau mot de passe</label>
+          <input id="reset-password" name="password" type="password" autocomplete="new-password" required minlength="4" maxlength="80"/>
+        </div>
+        <button type="submit">Changer mon mot de passe</button>
+      </form>
+
+      <p class="notice" data-auth-notice aria-live="polite"></p>
+    </section>
+
+    <aside class="brief">
+      <h2>Acces requis</h2>
+      <p class="auth-note">Votre compte reste enregistre sur cet appareil. Votre pseudo sert d'identifiant de connexion. Il est distinct de votre equipe d'escape game : vous pourrez rejoindre une equipe apres connexion.</p>
+      <div class="session-preview" data-current-session hidden>
+        <span class="current-team-label">Compte connecte</span>
+        <img class="account-avatar" data-user-avatar alt="" hidden/>
+        <strong data-user-name></strong>
+        <form class="auth-form" data-preferences-form style="margin-top:1rem">
+          <div class="field">
+            <label for="pref-email">Adresse mail</label>
+            <input id="pref-email" name="email" type="email" autocomplete="email" required maxlength="120"/>
+          </div>
+          <div class="field">
+            <label for="pref-phone">Numero de telephone</label>
+            <input id="pref-phone" name="phone" type="tel" autocomplete="tel" maxlength="40"/>
+          </div>
+          <label class="check-field" for="pref-notify">
+            <input id="pref-notify" name="notifyByEmail" type="checkbox" value="true"/>
+            <span>Recevoir les notifications mail.</span>
+          </label>
+          <button type="submit">Enregistrer mes preferences</button>
+        </form>
+        <div class="button-row" style="margin-top:1rem">
+          <button type="button" class="secondary" data-auth-logout>Se deconnecter</button>
+        </div>
+      </div>
+    </aside>
+  </section>
+</main>
+<script src="assets/api-config.js"></script>
+<script src="assets/auth.js"></script>
+<script>
+const loginForm = document.querySelector('[data-login-form]');
+const registerForm = document.querySelector('[data-register-form]');
+const forgotForm = document.querySelector('[data-forgot-form]');
+const resetForm = document.querySelector('[data-reset-form]');
+const preferencesForm = document.querySelector('[data-preferences-form]');
+const notice = document.querySelector('[data-auth-notice]');
+const sessionPreview = document.querySelector('[data-current-session]');
+const identityCard = document.querySelector('[data-identity-card]');
+const identityStatus = document.querySelector('[data-identity-status]');
+const identityName = document.querySelector('[data-identity-name]');
+const modeButtons = document.querySelectorAll('[data-auth-mode]');
+const modeTabs = document.querySelector('.auth-tabs');
+const forgotLink = document.querySelector('[data-forgot-link]');
+const backLoginButtons = document.querySelectorAll('[data-back-login]');
+const avatarGrid = document.querySelector('[data-avatar-grid]');
+const avatarValue = document.querySelector('[data-avatar-value]');
+const pageParams = new URLSearchParams(window.location.search);
+const resetToken = pageParams.get('reset') || '';
+let selectedIdentity = null;
+const AVATARS = [
+  'assets/avatar/0428cd4e-5f51-4cd1-8258-6ff9a4c6208f_576.jpg',
+  'assets/avatar/0e9bd765-df51-455b-b0f7-4b934033b779_576.jpg',
+  'assets/avatar/16bde6e3-4782-4322-9dd2-51addcd21e9b_576.jpg',
+  'assets/avatar/16d7d991-f061-441a-b597-397db25e9a31_576.jpg',
+  'assets/avatar/1911282f-db92-4ccc-89ef-6cccacb98906_576.jpg',
+  'assets/avatar/33721422-a547-4447-9ed1-4e921ed3c24e_576.jpg',
+  'assets/avatar/36122bc6-5390-4aeb-a9db-a0bfeb3e3f4e_576.jpg',
+  'assets/avatar/38af7cd9-4b35-404a-b57b-49d5dce0a5ce_576.jpg',
+  'assets/avatar/4d1cc920-297d-4e9b-a299-2b52dc56c5a7_576.jpg',
+  'assets/avatar/4d93f361-5722-473e-8651-8903d2ea8934_576.jpg',
+  'assets/avatar/559c015f-2ce5-4213-a12e-768f9b111d75_576.jpg',
+  'assets/avatar/55b9dd62-8da4-4dce-bf18-c71a25ba712c_576.jpg',
+  'assets/avatar/57b2be30-ceef-4b98-b4ba-dda608830d71_576.jpg',
+  'assets/avatar/5ca55911-219c-4ce6-a651-5a1bb53f2811_576.jpg',
+  'assets/avatar/6d51b0d3-445a-45e4-b57d-d4423e0acf3c_576.jpg',
+  'assets/avatar/8f0c5aae-83c9-45cd-a1d1-9bddab3cae6e_576.jpg',
+  'assets/avatar/9299026e-4225-4fc5-b215-01f628483c00_576.jpg',
+  'assets/avatar/a64967cc-4ed1-4faf-90e1-b27747b8d777_576.jpg',
+  'assets/avatar/a989e0cf-b982-4fc0-9294-97919f44305e_576.jpg',
+  'assets/avatar/ad56707f-054a-4f5b-852e-61e392ccc228_576.jpg',
+  'assets/avatar/b07dcd5f-bc4c-4bbd-9a7e-1fb47d22e856_576.jpg',
+  'assets/avatar/b13e6e26-2a64-49c9-9d05-b7e1b844c184_576.jpg',
+  'assets/avatar/cc722903-11d6-487e-9f05-13b90d750a13_576.jpg',
+  'assets/avatar/da1152fe-0e63-48bd-9d1e-95ddeec5b22a_576.jpg',
+  'assets/avatar/de2c16da-2acd-40e7-a56a-4af5207637d7_576.jpg',
+  'assets/avatar/e38a1997-a1fc-476a-9215-7cf05a37992e_576.jpg',
+  'assets/avatar/e54ddd24-19bf-4b4b-8e2e-d690e7220a6a_576.jpg',
+  'assets/avatar/ff78dff8-2f3e-49e9-8b98-02a7f8a2637e_576.jpg'
+];
+
+function setNotice(message, isError = false){
+  notice.textContent = message;
+  notice.classList.toggle('is-error', isError);
+}
+
+function nextUrl(){
+  return pageParams.get('next') || 'index.html';
+}
+
+function setMode(mode){
+  const activeMode = mode || 'login';
+  loginForm.hidden = activeMode !== 'login';
+  registerForm.hidden = activeMode !== 'register';
+  forgotForm.hidden = activeMode !== 'forgot';
+  resetForm.hidden = activeMode !== 'reset';
+  modeTabs.hidden = true;
+  modeButtons.forEach(button => {
+    const active = button.dataset.authMode === activeMode;
+    button.classList.toggle('is-active', active);
+    button.classList.toggle('secondary', !active || activeMode === 'forgot' || activeMode === 'reset');
+  });
+  setNotice('');
+}
+
+function resetIdentity(){
+  selectedIdentity = null;
+  identityCard.hidden = true;
+  modeTabs.hidden = true;
+  loginForm.hidden = true;
+  registerForm.hidden = true;
+  forgotForm.hidden = true;
+}
+
+function renderAvatars(){
+  avatarGrid.innerHTML = AVATARS.map((avatar, index) => (
+    `<button type="button" class="avatar-choice" data-avatar="${avatar}" aria-label="Choisir l'image ${index + 1}">
+      <img src="${avatar}" alt="Image de profil ${index + 1}"/>
+    </button>`
+  )).join('');
+}
+
+function selectAvatar(avatar){
+  avatarValue.value = avatar;
+  avatarGrid.querySelectorAll('[data-avatar]').forEach(button => {
+    button.classList.toggle('is-selected', button.dataset.avatar === avatar);
+  });
+}
+
+async function resolveAvatar(avatar){
+  selectAvatar(avatar);
+  resetIdentity();
+  setNotice('Verification du profil...');
+  try{
+    const identity = await PRCH_AUTH.request('userLookupAvatar', { avatar });
+    selectedIdentity = identity;
+    identityCard.hidden = false;
+    if(identity.exists){
+      identityStatus.textContent = identity.hasPassword
+        ? 'Compte trouve'
+        : `Compte precree. Creez votre mot de passe via le lien oublie${identity.emailHint ? ' envoye a ' + identity.emailHint : ''}.`;
+      identityName.textContent = identity.displayName || identity.username;
+      loginForm.username.value = identity.username;
+      forgotForm.identifier.value = identity.username;
+      setMode(identity.hasPassword ? 'login' : 'forgot');
+    }else{
+      identityStatus.textContent = 'Nouveau profil';
+      identityName.textContent = 'Creation du compte';
+      registerForm.username.value = '';
+      setMode('register');
+    }
+  }catch(error){
+    setNotice(error.message, true);
+  }
+}
+
+async function submitAuth(action, form){
+  const button = form.querySelector('button[type="submit"]');
+  const data = Object.fromEntries(new FormData(form).entries());
+  if(action === 'userRegister'){
+    data.notifyByEmail = form.querySelector('[name="notifyByEmail"]').checked ? 'true' : 'false';
+    data.avatar = avatarValue.value;
+    if(!data.avatar){
+      setNotice('Choisissez une image de profil.', true);
+      button.disabled = false;
+      return;
+    }
+  }
+  button.disabled = true;
+  setNotice('Connexion au serveur...');
+  try{
+    const session = await PRCH_AUTH.request(action, data);
+    PRCH_AUTH.saveSession(session);
+    setNotice('Session ouverte.');
+    window.location.href = nextUrl();
+  }catch(error){
+    setNotice(error.message, true);
+  }finally{
+    button.disabled = false;
+  }
+}
+
+async function requestPasswordReset(form){
+  const button = form.querySelector('button[type="submit"]');
+  const data = Object.fromEntries(new FormData(form).entries());
+  data.resetUrl = window.location.origin + window.location.pathname;
+  button.disabled = true;
+  setNotice('Demande envoyee au serveur...');
+  try{
+    await PRCH_AUTH.request('requestPasswordReset', data);
+    setNotice('Si un compte correspond, un email vient d etre envoye.');
+  }catch(error){
+    setNotice(error.message, true);
+  }finally{
+    button.disabled = false;
+  }
+}
+
+async function resetPassword(form){
+  const button = form.querySelector('button[type="submit"]');
+  const data = Object.fromEntries(new FormData(form).entries());
+  data.token = resetToken;
+  button.disabled = true;
+  setNotice('Mise a jour du mot de passe...');
+  try{
+    await PRCH_AUTH.request('resetPassword', data);
+    PRCH_AUTH.clearSession();
+    window.history.replaceState({}, document.title, window.location.pathname);
+    setMode('login');
+    setNotice('Mot de passe mis a jour. Vous pouvez vous connecter.');
+  }catch(error){
+    setNotice(error.message, true);
+  }finally{
+    button.disabled = false;
+  }
+}
+
+async function loadPreferences(){
+  const session = PRCH_AUTH.getSession();
+  if(!session){
+    return;
+  }
+  try{
+    const data = await PRCH_AUTH.request('validateUserSession', {
+      username: session.username,
+      userToken: session.userToken
+    });
+    preferencesForm.email.value = data.email || '';
+    preferencesForm.phone.value = data.phone || '';
+    preferencesForm.notifyByEmail.checked = data.notifyByEmail === true;
+  }catch(error){
+    setNotice(error.message, true);
+  }
+}
+
+async function savePreferences(){
+  const session = PRCH_AUTH.getSession();
+  if(!session){
+    return;
+  }
+  const button = preferencesForm.querySelector('button[type="submit"]');
+  const data = Object.fromEntries(new FormData(preferencesForm).entries());
+  button.disabled = true;
+  setNotice('Enregistrement des preferences...');
+  try{
+    await PRCH_AUTH.request('userUpdatePreferences', {
+      username: session.username,
+      userToken: session.userToken,
+      email: data.email,
+      phone: data.phone,
+      notifyByEmail: preferencesForm.notifyByEmail.checked ? 'true' : 'false'
+    });
+    setNotice('Preferences enregistrees.');
+  }catch(error){
+    setNotice(error.message, true);
+  }finally{
+    button.disabled = false;
+  }
+}
+
+modeButtons.forEach(button => {
+  button.addEventListener('click', () => setMode(button.dataset.authMode));
+});
+
+forgotLink.addEventListener('click', () => setMode('forgot'));
+
+backLoginButtons.forEach(button => {
+  button.addEventListener('click', () => setMode('login'));
+});
+
+avatarGrid.addEventListener('click', event => {
+  const button = event.target.closest('[data-avatar]');
+  if(button){
+    resolveAvatar(button.dataset.avatar);
+  }
+});
+
+loginForm.addEventListener('submit', event => {
+  event.preventDefault();
+  submitAuth('userLogin', loginForm);
+});
+
+registerForm.addEventListener('submit', event => {
+  event.preventDefault();
+  submitAuth('userRegister', registerForm);
+});
+
+forgotForm.addEventListener('submit', event => {
+  event.preventDefault();
+  requestPasswordReset(forgotForm);
+});
+
+resetForm.addEventListener('submit', event => {
+  event.preventDefault();
+  resetPassword(resetForm);
+});
+
+preferencesForm.addEventListener('submit', event => {
+  event.preventDefault();
+  savePreferences();
+});
+
+const session = PRCH_AUTH.getSession();
+if(session){
+  sessionPreview.hidden = false;
+  document.querySelector('[data-user-name]').textContent = session.displayName || session.username;
+  loadPreferences();
+}
+
+renderAvatars();
+if(resetToken){
+  setMode('reset');
+}else{
+  resetIdentity();
+}
+</script>
+</body>
+</html>

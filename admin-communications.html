@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin communications - Party Retro Chill Hub</title>
+  <link rel="icon" type="image/png" href="assets/favicons/favicon-prch.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="assets/escape.css"/>
+  <style>
+    .admin-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;align-items:start}
+    .form-grid{display:grid;gap:.8rem}
+    input,textarea,select{width:100%;border:1px solid rgba(0,245,255,.28);border-radius:6px;background:#080713;color:var(--text);font:inherit;padding:.7rem .75rem;outline:none}
+    textarea{min-height:9rem;resize:vertical}
+    input:focus,textarea:focus,select:focus{border-color:var(--yellow);box-shadow:0 0 0 3px rgba(255,230,0,.12)}
+    .check-field{display:flex;align-items:flex-start;gap:.55rem;color:rgba(238,240,255,.76);line-height:1.45}
+    .check-field input{width:auto;margin-top:.2rem}
+    @media (max-width:820px){.admin-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<main class="shell">
+  <div class="topline">
+    <a class="nav-link" href="index.html">Dashboard</a>
+    <span>PRCH // Admin communications</span>
+  </div>
+
+  <section class="hero">
+    <h1>Communications</h1>
+    <p class="subtitle">Precreez les comptes a rattraper et envoyez les notifications de nouveaute depuis la boite OVH.</p>
+  </section>
+
+  <section class="admin-grid">
+    <section class="panel">
+      <h2>Compte sans mot de passe</h2>
+      <form class="form-grid" data-user-form>
+        <label class="field">
+          <span>Mot de passe admin</span>
+          <input name="adminPassword" type="password" required autocomplete="current-password"/>
+        </label>
+        <label class="field">
+          <span>Pseudo reconnaissable</span>
+          <input name="username" required minlength="3" maxlength="60"/>
+        </label>
+        <label class="field">
+          <span>Email</span>
+          <input name="email" type="email" required maxlength="120"/>
+        </label>
+        <label class="field">
+          <span>Telephone</span>
+          <input name="phone" type="tel" maxlength="40"/>
+        </label>
+        <label class="field">
+          <span>Chemin de la photo</span>
+          <input name="avatar" required placeholder="assets/avatar/...jpg"/>
+        </label>
+        <label class="check-field">
+          <input name="notifyByEmail" type="checkbox" value="true" checked/>
+          <span>Activer les notifications mail pour ce participant</span>
+        </label>
+        <button type="submit">Precreer le compte</button>
+      </form>
+      <p class="notice" data-user-notice aria-live="polite"></p>
+    </section>
+
+    <section class="panel">
+      <h2>Notification globale</h2>
+      <form class="form-grid" data-notify-form>
+        <label class="field">
+          <span>Mot de passe admin</span>
+          <input name="adminPassword" type="password" required autocomplete="current-password"/>
+        </label>
+        <label class="field">
+          <span>Sujet</span>
+          <input name="subject" required maxlength="160" value="Nouveaute sur Party Retro Chill Hub"/>
+        </label>
+        <label class="field">
+          <span>Message</span>
+          <textarea name="message" required maxlength="2000"></textarea>
+        </label>
+        <button type="submit">Envoyer aux opt-in</button>
+      </form>
+      <p class="notice" data-notify-notice aria-live="polite"></p>
+    </section>
+  </section>
+</main>
+
+<script src="assets/api-config.js"></script>
+<script>
+const API_URL = window.PRCH_API_URL || '';
+const userForm = document.querySelector('[data-user-form]');
+const notifyForm = document.querySelector('[data-notify-form]');
+const userNotice = document.querySelector('[data-user-notice]');
+const notifyNotice = document.querySelector('[data-notify-notice]');
+
+function setNotice(node, message, isError = false){
+  node.textContent = message;
+  node.classList.toggle('is-error', isError);
+}
+
+function apiRequest(action, params = {}){
+  return new Promise((resolve, reject) => {
+    if(!API_URL){
+      reject(new Error('Serveur non configure'));
+      return;
+    }
+    const callback = `prchAdminCom${Date.now()}${Math.floor(Math.random() * 10000)}`;
+    const query = new URLSearchParams({ action, callback });
+    Object.entries(params).forEach(([key, value]) => query.set(key, value == null ? '' : String(value)));
+    const script = document.createElement('script');
+    const timer = window.setTimeout(() => {
+      cleanup();
+      reject(new Error('Delai depasse avec le serveur'));
+    }, 15000);
+    function cleanup(){
+      window.clearTimeout(timer);
+      delete window[callback];
+      script.remove();
+    }
+    window[callback] = payload => {
+      cleanup();
+      if(payload && payload.ok){
+        resolve(payload.data || {});
+        return;
+      }
+      reject(new Error((payload && payload.error) || 'Erreur serveur'));
+    };
+    script.onerror = () => {
+      cleanup();
+      reject(new Error('Impossible de contacter le serveur'));
+    };
+    script.src = `${API_URL}?${query.toString()}`;
+    document.body.appendChild(script);
+  });
+}
+
+userForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  const button = userForm.querySelector('button[type="submit"]');
+  const data = Object.fromEntries(new FormData(userForm).entries());
+  data.notifyByEmail = userForm.querySelector('[name="notifyByEmail"]').checked ? 'true' : 'false';
+  button.disabled = true;
+  setNotice(userNotice, 'Creation du compte...');
+  try{
+    const result = await apiRequest('adminCreateUser', data);
+    setNotice(userNotice, `Compte ${result.username} pret. Le participant creera son mot de passe via mot de passe oublie.`);
+    userForm.reset();
+    userForm.querySelector('[name="notifyByEmail"]').checked = true;
+  }catch(error){
+    setNotice(userNotice, error.message, true);
+  }finally{
+    button.disabled = false;
+  }
+});
+
+notifyForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  const button = notifyForm.querySelector('button[type="submit"]');
+  const data = Object.fromEntries(new FormData(notifyForm).entries());
+  button.disabled = true;
+  setNotice(notifyNotice, 'Envoi des notifications...');
+  try{
+    const result = await apiRequest('adminNotifySiteUpdate', data);
+    setNotice(notifyNotice, `${result.sent || 0} notification(s) envoyee(s).`);
+  }catch(error){
+    setNotice(notifyNotice, error.message, true);
+  }finally{
+    button.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
