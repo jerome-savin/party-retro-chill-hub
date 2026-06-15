@@ -1163,7 +1163,7 @@ function makeUserToken_(username, passwordHash) {
 }
 
 function normalizeUsername_(username) {
-  return String(username || '').trim().toLowerCase();
+  return String(username || '').trim().toLowerCase().replace(/\s+/g, '_');
 }
 
 function makeResetToken_() {

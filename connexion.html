@@ -10,7 +10,9 @@
   <link rel="stylesheet" href="assets/escape.css"/>
   <style>
     .auth-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,380px);gap:1rem;align-items:start}
+    .auth-layout.is-account-only{grid-template-columns:minmax(280px,420px);justify-content:center}
     .auth-card{display:grid;gap:.85rem}
+    .auth-card[hidden]{display:none}
     .auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:.45rem}
     .auth-tabs[hidden]{display:none}
     .auth-tabs button{min-height:2.4rem}
@@ -47,10 +49,10 @@
     <p class="subtitle">Connectez-vous avec votre compte pour acceder au site, aux inscriptions et aux epreuves.</p>
   </section>
 
-  <section class="auth-layout">
-    <section class="panel auth-card">
+  <section class="auth-layout" data-auth-layout>
+    <section class="panel auth-card" data-auth-card>
       <div class="field">
-        <label>Choisissez votre photo</label>
+        <label>Qui êtes vous ?</label>
         <input type="hidden" name="avatar" data-avatar-value required/>
         <div class="avatar-grid" data-avatar-grid></div>
       </div>
@@ -78,7 +80,8 @@
       <form class="auth-form" data-register-form hidden>
         <div class="field">
           <label for="register-username">Pseudo reconnaissable</label>
-          <input id="register-username" name="username" autocomplete="username" required minlength="3" maxlength="60"/>
+          <input id="register-username" name="username" autocomplete="username" required minlength="3" maxlength="60" pattern="[^\s]+"/>
+          <span class="auth-note">Les espaces seront remplaces par des underscores.</span>
         </div>
         <div class="field">
           <label for="register-email">Adresse mail</label>
@@ -86,7 +89,7 @@
         </div>
         <label class="check-field" for="register-notify">
           <input id="register-notify" name="notifyByEmail" type="checkbox" value="true"/>
-          <span>Je souhaite recevoir des notifications mail lors des nouveautes sur le site.</span>
+          <span>Je souhaite recevoir des notifications mail des organisateurs.</span>
         </label>
         <div class="field">
           <label for="register-phone">Numero de telephone</label>
@@ -121,7 +124,7 @@
 
     <aside class="brief">
       <h2>Acces requis</h2>
-      <p class="auth-note">Votre compte reste enregistre sur cet appareil. Votre pseudo sert d'identifiant de connexion. Il est distinct de votre equipe d'escape game : vous pourrez rejoindre une equipe apres connexion.</p>
+      <p class="auth-note">Votre compte reste enregistre sur cet appareil. Votre pseudo sert d'identifiant de connexion.</p>
       <div class="session-preview" data-current-session hidden>
         <span class="current-team-label">Compte connecte</span>
         <img class="account-avatar" data-user-avatar alt="" hidden/>
@@ -137,7 +140,7 @@
           </div>
           <label class="check-field" for="pref-notify">
             <input id="pref-notify" name="notifyByEmail" type="checkbox" value="true"/>
-            <span>Recevoir les notifications mail.</span>
+            <span>Recevoir les notifications mail des organisateurs.</span>
           </label>
           <button type="submit">Enregistrer mes preferences</button>
         </form>
@@ -157,6 +160,8 @@ const forgotForm = document.querySelector('[data-forgot-form]');
 const resetForm = document.querySelector('[data-reset-form]');
 const preferencesForm = document.querySelector('[data-preferences-form]');
 const notice = document.querySelector('[data-auth-notice]');
+const authLayout = document.querySelector('[data-auth-layout]');
+const authCard = document.querySelector('[data-auth-card]');
 const sessionPreview = document.querySelector('[data-current-session]');
 const identityCard = document.querySelector('[data-identity-card]');
 const identityStatus = document.querySelector('[data-identity-status]');
@@ -167,10 +172,13 @@ const forgotLink = document.querySelector('[data-forgot-link]');
 const backLoginButtons = document.querySelectorAll('[data-back-login]');
 const avatarGrid = document.querySelector('[data-avatar-grid]');
 const avatarValue = document.querySelector('[data-avatar-value]');
+const registerUsername = document.getElementById('register-username');
 const pageParams = new URLSearchParams(window.location.search);
 const resetToken = pageParams.get('reset') || '';
+const PUBLIC_SITE_URL = 'https://party-retro-chill-hub.fr';
 let selectedIdentity = null;
 const AVATARS = [
+  'assets/avatar/organisateurs-avatar.png',
   'assets/avatar/0428cd4e-5f51-4cd1-8258-6ff9a4c6208f_576.jpg',
   'assets/avatar/0e9bd765-df51-455b-b0f7-4b934033b779_576.jpg',
   'assets/avatar/16bde6e3-4782-4322-9dd2-51addcd21e9b_576.jpg',
@@ -206,6 +214,10 @@ function setNotice(message, isError = false){
   notice.classList.toggle('is-error', isError);
 }
 
+function normalizeUsernameInput(value){
+  return String(value || '').trim().replace(/\s+/g, '_');
+}
+
 function nextUrl(){
   return pageParams.get('next') || 'index.html';
 }
@@ -232,6 +244,12 @@ function resetIdentity(){
   loginForm.hidden = true;
   registerForm.hidden = true;
   forgotForm.hidden = true;
+}
+
+function showAccountOnly(){
+  authCard.hidden = true;
+  authLayout.classList.add('is-account-only');
+  sessionPreview.hidden = false;
 }
 
 function renderAvatars(){
@@ -281,6 +299,7 @@ async function submitAuth(action, form){
   const data = Object.fromEntries(new FormData(form).entries());
   if(action === 'userRegister'){
     data.notifyByEmail = form.querySelector('[name="notifyByEmail"]').checked ? 'true' : 'false';
+    data.username = normalizeUsernameInput(data.username);
     data.avatar = avatarValue.value;
     if(!data.avatar){
       setNotice('Choisissez une image de profil.', true);
@@ -305,7 +324,7 @@ async function submitAuth(action, form){
 async function requestPasswordReset(form){
   const button = form.querySelector('button[type="submit"]');
   const data = Object.fromEntries(new FormData(form).entries());
-  data.resetUrl = window.location.origin + window.location.pathname;
+  data.resetUrl = `${PUBLIC_SITE_URL}/connexion.html`;
   button.disabled = true;
   setNotice('Demande envoyee au serveur...');
   try{
@@ -390,6 +409,25 @@ backLoginButtons.forEach(button => {
   button.addEventListener('click', () => setMode('login'));
 });
 
+registerUsername.addEventListener('input', () => {
+  const normalized = normalizeUsernameInput(registerUsername.value);
+  if(registerUsername.value !== normalized){
+    registerUsername.value = normalized;
+  }
+});
+
+registerUsername.addEventListener('keydown', event => {
+  if(event.key !== ' '){
+    return;
+  }
+  event.preventDefault();
+  const start = registerUsername.selectionStart;
+  const end = registerUsername.selectionEnd;
+  const value = registerUsername.value;
+  registerUsername.value = `${value.slice(0, start)}_${value.slice(end)}`;
+  registerUsername.setSelectionRange(start + 1, start + 1);
+});
+
 avatarGrid.addEventListener('click', event => {
   const button = event.target.closest('[data-avatar]');
   if(button){
@@ -424,15 +462,14 @@ preferencesForm.addEventListener('submit', event => {
 
 const session = PRCH_AUTH.getSession();
 if(session){
-  sessionPreview.hidden = false;
+  showAccountOnly();
   document.querySelector('[data-user-name]').textContent = session.displayName || session.username;
   loadPreferences();
-}
-
-renderAvatars();
-if(resetToken){
+}else if(resetToken){
+  renderAvatars();
   setMode('reset');
 }else{
+  renderAvatars();
   resetIdentity();
 }
 </script>

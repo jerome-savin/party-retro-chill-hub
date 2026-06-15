@@ -23,6 +23,7 @@
     .chat-body{margin-top:.45rem;color:rgba(238,240,255,.86);line-height:1.5;white-space:pre-wrap}
     .mention{display:inline-block;border:1px solid rgba(0,255,136,.38);border-radius:999px;background:rgba(0,255,136,.1);color:var(--green);padding:0 .28rem;font-weight:700}
     .chat-form{display:grid;gap:.8rem}
+    .chat-form .field[hidden]{display:none}
     .chat-form textarea{min-height:8rem;resize:vertical}
     .message-mode{display:grid;grid-template-columns:1fr 1fr;gap:.55rem}
     .mode-choice{display:grid;gap:.2rem;border:1px solid rgba(0,245,255,.22);border-radius:8px;background:rgba(0,245,255,.045);padding:.65rem;cursor:pointer}
@@ -193,11 +194,12 @@ function updatePrivateControls(){
 }
 
 function renderMessages(messages){
-  if(!messages.length){
+  const orderedMessages = [...messages].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  if(!orderedMessages.length){
     feed.innerHTML = '<p class="empty">Aucun message pour le moment.</p>';
     return;
   }
-  feed.innerHTML = messages.map(item => {
+  feed.innerHTML = orderedMessages.map(item => {
     const avatar = messageAvatar(item);
     return `
       <article class="chat-message ${item.visibility === 'private' ? 'is-private' : ''}">
@@ -216,7 +218,7 @@ function renderMessages(messages){
       </article>
     `;
   }).join('');
-  feed.scrollTop = feed.scrollHeight;
+  feed.scrollTop = 0;
 }
 
 async function refreshChat(){
