@@ -25,6 +25,14 @@ jobs:
           PRCH_AGENT_MODEL: ${{ secrets.PRCH_AGENT_MODEL }}
           PRCH_AGENT_FRAGMENT: ${{ secrets.PRCH_AGENT_FRAGMENT }}
           PRCH_AGENT_INSTRUCTIONS: ${{ secrets.PRCH_AGENT_INSTRUCTIONS }}
+          MAIL_API_KEY: ${{ secrets.MAIL_API_KEY }}
+          OVH_SMTP_HOST: ${{ secrets.OVH_SMTP_HOST }}
+          OVH_SMTP_PORT: ${{ secrets.OVH_SMTP_PORT }}
+          OVH_SMTP_SECURE: ${{ secrets.OVH_SMTP_SECURE }}
+          OVH_SMTP_USERNAME: ${{ secrets.OVH_SMTP_USERNAME }}
+          OVH_SMTP_PASSWORD: ${{ secrets.OVH_SMTP_PASSWORD }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          MAIL_FROM_NAME: ${{ secrets.MAIL_FROM_NAME }}
         run: |
           mkdir -p api
           b64() { printf '%s' "$1" | base64 -w 0; }
@@ -36,6 +44,14 @@ jobs:
               'model' => base64_decode('$(b64 "${PRCH_AGENT_MODEL:-gpt-4.1-mini}")'),
               'fragment' => base64_decode('$(b64 "${PRCH_AGENT_FRAGMENT:-SUPPORT-2002}")'),
               'instructions' => base64_decode('$(b64 "$PRCH_AGENT_INSTRUCTIONS")'),
+              'mail_api_key' => base64_decode('$(b64 "$MAIL_API_KEY")'),
+              'smtp_host' => base64_decode('$(b64 "${OVH_SMTP_HOST:-ssl0.ovh.net}")'),
+              'smtp_port' => (int) base64_decode('$(b64 "${OVH_SMTP_PORT:-465}")'),
+              'smtp_secure' => base64_decode('$(b64 "${OVH_SMTP_SECURE:-ssl}")'),
+              'smtp_username' => base64_decode('$(b64 "${OVH_SMTP_USERNAME:-organisateurs@party-retro-chill-hub.fr}")'),
+              'smtp_password' => base64_decode('$(b64 "$OVH_SMTP_PASSWORD")'),
+              'mail_from' => base64_decode('$(b64 "${MAIL_FROM:-organisateurs@party-retro-chill-hub.fr}")'),
+              'mail_from_name' => base64_decode('$(b64 "${MAIL_FROM_NAME:-Organisateurs Party Retro Chill Hub}")'),
           ];
           PHP
 

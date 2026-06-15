@@ -43,9 +43,32 @@ PRCH_API_URL=https://script.google.com/macros/s/.../exec
 PRCH_AGENT_MODEL=gpt-4.1-mini
 PRCH_AGENT_FRAGMENT=SUPPORT-2002
 PRCH_AGENT_INSTRUCTIONS=...
+MAIL_API_KEY=une-cle-longue-aleatoire
+OVH_SMTP_HOST=ssl0.ovh.net
+OVH_SMTP_PORT=465
+OVH_SMTP_SECURE=ssl
+OVH_SMTP_USERNAME=organisateurs@party-retro-chill-hub.fr
+OVH_SMTP_PASSWORD=mot-de-passe-de-la-boite-ovh
+MAIL_FROM=organisateurs@party-retro-chill-hub.fr
+MAIL_FROM_NAME=Organisateurs Party Retro Chill Hub
 ```
 
 `PRCH_AGENT_INSTRUCTIONS` doit decrire les criteres exacts de reussite de l'epreuve 7. Tant que ces criteres ne sont pas satisfaits, l'agent doit repondre sans fragment. Quand ils le sont, il renvoie le fragment et `api/agent.php` l'enregistre dans Sheets pour l'equipe connectee.
+
+## Envoi de mails OVH
+
+Le fichier `api/mail.php` envoie les emails via la boite OVH `organisateurs@party-retro-chill-hub.fr`. Les identifiants SMTP restent dans `api/config.php`, genere automatiquement au deploiement depuis les secrets GitHub. Les emails ne partent donc pas du compte Google personnel.
+
+L'endpoint exige une cle serveur `MAIL_API_KEY`, a transmettre dans l'en-tete `X-PRCH-Mail-Key`. Ne pas appeler cet endpoint directement depuis une page publique avec cette cle, car elle serait visible dans le navigateur.
+
+Exemple de test apres deploiement :
+
+```bash
+curl -X POST https://party-retro-chill-hub.fr/api/mail.php \
+  -H "Content-Type: application/json" \
+  -H "X-PRCH-Mail-Key: VOTRE_MAIL_API_KEY" \
+  -d '{"to":"test@example.com","subject":"Test PRCH","text":"Message envoye depuis la boite OVH."}'
+```
 
 ## Actions escape disponibles
 
