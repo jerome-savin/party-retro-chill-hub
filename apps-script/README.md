@@ -19,7 +19,8 @@ Le script Apps Script ne contient pas la logique OpenAI. L'epreuve 7 passe par `
 2. Aller dans `Extensions > Apps Script`.
 3. Copier le contenu de `Code.gs`.
 4. Executer `setupSheets()` une premiere fois.
-5. Dans `Project Settings > Script Properties`, ajouter :
+5. Executer `installOrganizerMessageTrigger()` une fois si les messages organisateurs doivent etre publies chaque jour autour de 10h.
+6. Dans `Project Settings > Script Properties`, ajouter :
 
 ```text
 PRCH_ADMIN_PASSWORD=mot-de-passe-admin
@@ -28,7 +29,7 @@ PRCH_MAIL_API_URL=https://party-retro-chill-hub.fr/api/mail.php
 PRCH_MAIL_API_KEY=la-meme-cle-que-le-secret-github-MAIL_API_KEY
 ```
 
-6. Deployer en application web :
+7. Deployer en application web :
 
 ```text
 Execute as: Me
@@ -115,6 +116,14 @@ Pour le mot de passe oublie, `requestPasswordReset` recoit `identifier` et `rese
 
 Le chat utilise `chatList` et `chatPost`. Les notifications mail partent via `api/mail.php`, jamais via Gmail, si `notifyByEmail` est actif pour le destinataire.
 Les messages prives des participants sont toujours adresses au compte special `organisateurs`. Creez donc un compte participant avec le pseudo `organisateurs` pour que les organisateurs puissent lire ces messages et repondre en prive.
+
+Les messages envoyes par le compte `organisateurs` sont programmes pour 10h :
+
+- avant 10h, ils deviennent visibles le jour meme a 10h ;
+- a partir de 10h, ils deviennent visibles le lendemain a 10h ;
+- les notifications liees a ces messages sont envoyees par `publishScheduledOrganizerMessages()`, via le declencheur installe avec `installOrganizerMessageTrigger()`.
+
+Apps Script execute le declencheur autour de 10h, sans garantir la minute exacte.
 
 `admin-communications.html` permet de :
 

@@ -137,12 +137,56 @@ function setupChatSheets_() {
 
   if (!chat) {
     chat = ss.insertSheet(SHEET_CHAT);
-    chat.appendRow(['id', 'createdAt', 'authorUsername', 'authorName', 'visibility', 'recipientUsername', 'recipientName', 'message', 'mentions', 'parentId']);
+    chat.appendRow(['id', 'createdAt', 'authorUsername', 'authorName', 'visibility', 'recipientUsername', 'recipientName', 'message', 'mentions', 'parentId', 'visibleAt', 'notifiedAt']);
+  } else {
+    migrateChatSheet_(chat);
   }
 
   if (!notifications) {
     notifications = ss.insertSheet(SHEET_NOTIFICATIONS);
     notifications.appendRow(['createdAt', 'type', 'recipientUsername', 'recipientEmail', 'subject', 'status', 'detail']);
+  }
+}
+
+function migrateChatSheet_(sheet) {
+  const requiredHeader = ['id', 'createdAt', 'authorUsername', 'authorName', 'visibility', 'recipientUsername', 'recipientName', 'message', 'mentions', 'parentId', 'visibleAt', 'notifiedAt'];
+  const values = sheet.getDataRange().getValues();
+  if (!values.length) {
+    sheet.appendRow(requiredHeader);
+    return;
+  }
+
+  const header = values[0].map(value => String(value || '').trim());
+  if (header.join('|') === requiredHeader.join('|')) {
+    return;
+  }
+
+  const index = {};
+  header.forEach((name, position) => {
+    index[name] = position;
+  });
+  sheet.getRange(1, 1, 1, requiredHeader.length).setValues([requiredHeader]);
+  for (let row = 2; row <= values.length; row++) {
+    const existing = values[row - 1];
+    const id = String(index.id === undefined ? existing[0] || '' : existing[index.id] || '').trim();
+    if (!id) {
+      continue;
+    }
+    const createdAt = index.createdAt === undefined ? existing[1] || new Date() : existing[index.createdAt] || new Date();
+    sheet.getRange(row, 1, 1, requiredHeader.length).setValues([[
+      id,
+      createdAt,
+      index.authorUsername === undefined ? existing[2] || '' : existing[index.authorUsername] || '',
+      index.authorName === undefined ? existing[3] || '' : existing[index.authorName] || '',
+      index.visibility === undefined ? existing[4] || 'public' : existing[index.visibility] || 'public',
+      index.recipientUsername === undefined ? existing[5] || '' : existing[index.recipientUsername] || '',
+      index.recipientName === undefined ? existing[6] || '' : existing[index.recipientName] || '',
+      index.message === undefined ? existing[7] || '' : existing[index.message] || '',
+      index.mentions === undefined ? existing[8] || '' : existing[index.mentions] || '',
+      index.parentId === undefined ? existing[9] || '' : existing[index.parentId] || '',
+      index.visibleAt === undefined ? createdAt : existing[index.visibleAt] || createdAt,
+      index.notifiedAt === undefined ? createdAt : existing[index.notifiedAt] || ''
+    ]]);
   }
 }
 
@@ -884,11 +928,13 @@ function adminCreateUser_(username, email, phone, notifyByEmail, avatar) {
 
 function readChat_(username, token) {
   const viewer = getValidatedUser_(username, token);
+  const now = new Date();
   const usersByUsername = {};
   getUserRecords_().forEach(user => {
     usersByUsername[user.username] = user;
   });
   const messages = getChatRows_()
+    .filter(message => !message.visibleAt || message.visibleAt.getTime() <= now.getTime())
     .filter(message => message.visibility === 'public' || message.authorUsername === viewer.username || message.recipientUsername === viewer.username)
     .map(message => ({
       id: message.id,
@@ -901,7 +947,8 @@ function readChat_(username, token) {
       recipientName: message.recipientName,
       message: message.message,
       mentions: message.mentions,
-      parentId: message.parentId
+      parentId: message.parentId,
+      visibleAt: message.visibleAt instanceof Date ? message.visibleAt.toISOString() : ''
     }));
 
   return { messages, participants: listParticipants_().participants };
@@ -935,9 +982,13 @@ function postChat_(username, token, visibility, recipientUsername, message, pare
 
   const mentions = extractMentions_(cleanMessage);
   const id = Utilities.getUuid();
+  const createdAt = new Date();
+  const visibleAt = computeChatVisibleAt_(author, createdAt);
+  const notifyNow = visibleAt.getTime() <= createdAt.getTime();
+  const notifiedAt = '';
   SpreadsheetApp.getActive().getSheetByName(SHEET_CHAT).appendRow([
     id,
-    new Date(),
+    createdAt,
     author.username,
     author.displayName,
     cleanVisibility,
@@ -945,10 +996,15 @@ function postChat_(username, token, visibility, recipientUsername, message, pare
     recipient ? recipient.displayName : '',
     cleanMessage,
     mentions.join(','),
-    cleanParentId
+    cleanParentId,
+    visibleAt,
+    notifiedAt
   ]);
 
-  notifyChatRecipients_(author, recipient, mentions, cleanMessage, cleanVisibility);
+  if (notifyNow) {
+    notifyChatRecipients_(author, recipient, mentions, cleanMessage, cleanVisibility);
+    markChatMessageNotified_(id);
+  }
   return readChat_(username, token);
 }
 
@@ -1016,7 +1072,8 @@ function getUserRecords_() {
 function getChatRows_() {
   const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_CHAT);
   return sheet.getDataRange().getValues().slice(1)
-    .map(row => ({
+    .map((row, index) => ({
+      row: index + 2,
       id: String(row[0] || '').trim(),
       createdAt: row[1],
       authorUsername: normalizeUsername_(row[2]),
@@ -1026,9 +1083,70 @@ function getChatRows_() {
       recipientName: String(row[6] || '').trim(),
       message: String(row[7] || ''),
       mentions: String(row[8] || '').split(',').map(normalizeUsername_).filter(Boolean),
-      parentId: String(row[9] || '').trim()
+      parentId: String(row[9] || '').trim(),
+      visibleAt: row[10] instanceof Date ? row[10] : row[1] instanceof Date ? row[1] : null,
+      notifiedAt: row[11] instanceof Date ? row[11] : null
     }))
     .filter(message => message.id);
+}
+
+function publishScheduledOrganizerMessages() {
+  setupChatSheets_();
+  setupUserSheet_();
+
+  const now = new Date();
+  const usersByUsername = {};
+  getUserRecords_().forEach(user => {
+    usersByUsername[user.username] = user;
+  });
+
+  let published = 0;
+  getChatRows_()
+    .filter(message => message.authorUsername === ORGANIZER_USERNAME)
+    .filter(message => message.visibleAt && message.visibleAt.getTime() <= now.getTime())
+    .filter(message => !message.notifiedAt)
+    .forEach(message => {
+      const author = usersByUsername[message.authorUsername] || { username: message.authorUsername, displayName: message.authorName };
+      const recipient = message.recipientUsername ? usersByUsername[message.recipientUsername] || null : null;
+      notifyChatRecipients_(author, recipient, message.mentions, message.message, message.visibility);
+      SpreadsheetApp.getActive().getSheetByName(SHEET_CHAT).getRange(message.row, 12).setValue(new Date());
+      published++;
+    });
+
+  return { published };
+}
+
+function installOrganizerMessageTrigger() {
+  ScriptApp.getProjectTriggers()
+    .filter(trigger => trigger.getHandlerFunction() === 'publishScheduledOrganizerMessages')
+    .forEach(trigger => ScriptApp.deleteTrigger(trigger));
+
+  ScriptApp.newTrigger('publishScheduledOrganizerMessages')
+    .timeBased()
+    .atHour(10)
+    .everyDays(1)
+    .create();
+}
+
+function computeChatVisibleAt_(author, createdAt) {
+  if (author.username !== ORGANIZER_USERNAME) {
+    return createdAt;
+  }
+
+  const visibleAt = new Date(createdAt);
+  visibleAt.setHours(10, 0, 0, 0);
+  if (createdAt.getTime() >= visibleAt.getTime()) {
+    visibleAt.setDate(visibleAt.getDate() + 1);
+  }
+  return visibleAt;
+}
+
+function markChatMessageNotified_(id) {
+  const cleanId = String(id || '').trim();
+  const message = getChatRows_().find(row => row.id === cleanId);
+  if (message) {
+    SpreadsheetApp.getActive().getSheetByName(SHEET_CHAT).getRange(message.row, 12).setValue(new Date());
+  }
 }
 
 function extractMentions_(message) {
