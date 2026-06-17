@@ -85,15 +85,18 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
 .veil-label{font-size:.58rem;letter-spacing:.24em;text-transform:uppercase;color:rgba(0,245,255,.65)}
 .veil-time{font-family:'Orbitron',sans-serif;font-weight:900;font-size:clamp(.95rem,2.4vw,1.25rem);color:var(--yellow);text-shadow:0 0 12px rgba(255,230,0,.65)}
 
-/* REGISTRATION */
-.register-button{border:2px solid var(--magenta);display:inline-flex;align-items:center;justify-content:center;min-height:3rem;padding:.65rem 2.1rem;margin:1.2rem auto 0;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:clamp(1rem,2.6vw,1.4rem);color:var(--yellow);text-decoration:none;text-transform:uppercase;text-shadow:0 0 10px var(--yellow);letter-spacing:.08em;text-align:center;background:rgba(255,0,204,.08);box-shadow:0 0 15px rgba(255,0,204,.2),inset 0 0 10px rgba(255,0,204,.05);transition:transform .15s ease,border-color .15s ease,background .15s ease}
+/* ACTIONS */
+.action-panel{width:min(860px,100%);display:grid;grid-template-columns:minmax(0,1.25fr) minmax(260px,.75fr);gap:1rem;align-items:center;margin:1.2rem auto 0;border:1px solid rgba(0,245,255,.2);background:rgba(0,245,255,.035);padding:1rem;box-shadow:0 0 22px rgba(0,245,255,.06)}
+.organizers-note{margin:0;text-align:left;font-size:clamp(.72rem,1.8vw,.9rem);line-height:1.55;letter-spacing:.08em;text-transform:uppercase;color:rgba(232,234,255,.62);text-shadow:0 0 10px rgba(0,245,255,.18)}
+.organizers-note span{display:block;margin-top:.45rem;color:var(--magenta);text-shadow:0 0 12px rgba(255,0,204,.55)}
+.action-buttons{display:grid;grid-template-columns:1fr;gap:.55rem}
+.register-button{border:2px solid rgba(255,0,204,.62);display:inline-flex;align-items:center;justify-content:center;min-height:2.75rem;padding:.55rem 1.2rem;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:clamp(.95rem,2.3vw,1.22rem);color:var(--yellow);text-decoration:none;text-transform:uppercase;text-shadow:0 0 10px var(--yellow);letter-spacing:.08em;text-align:center;background:rgba(255,0,204,.08);box-shadow:0 0 15px rgba(255,0,204,.16),inset 0 0 10px rgba(255,0,204,.05);transition:transform .15s ease,border-color .15s ease,background .15s ease}
 .register-button:hover,.register-button:focus-visible{transform:translateY(-1px);border-color:var(--cyan);background:rgba(0,245,255,.08);outline:none}
-.organizers-note{max-width:720px;margin:1.4rem auto 0;text-align:center;font-size:clamp(.72rem,1.8vw,.9rem);line-height:1.5;letter-spacing:.08em;text-transform:uppercase;color:rgba(232,234,255,.62);text-shadow:0 0 10px rgba(0,245,255,.18)}
-.organizers-note span{color:var(--magenta);text-shadow:0 0 12px rgba(255,0,204,.55)}
+.register-button.primary{border-color:var(--magenta);background:rgba(255,0,204,.12)}
 
 .bottom{position:fixed;bottom:0;left:0;width:100%;z-index:50;padding:.55rem 1.5rem;background:rgba(7,5,15,.9);border-top:1px solid rgba(0,245,255,.12);display:flex;align-items:center;justify-content:center;gap:2rem;font-size:.55rem;letter-spacing:.2em;color:rgba(0,245,255,.35);text-transform:uppercase}
 .sep{color:rgba(0,245,255,.15)}
-@media (max-width:640px){.program-grid{grid-template-columns:1fr}.activity{min-height:3.8rem}}
+@media (max-width:640px){.program-grid{grid-template-columns:1fr}.activity{min-height:3.8rem}.action-panel{grid-template-columns:1fr}.organizers-note{text-align:center}}
 
 @keyframes fadeDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
@@ -253,10 +256,14 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
 
   <div class="div-neon"><div class="div-line"></div><div class="div-diamond"></div><div class="div-line"></div></div>
 
-  <a class="register-button" href="inscription.html">S'inscrire</a>
-  <p class="organizers-note">N'essayez pas de nous identifier, on est méconnaissables et improbables<br/><span>Les organisateurs</span></p>
-  <a class="register-button" href="pronostics.html">Faire un pronostic</a>
-  <a class="register-button" href="chat.html">Chat organisateurs</a>
+  <section class="action-panel" aria-label="Actions principales">
+    <p class="organizers-note">N'essayez pas de nous identifier, on est méconnaissables et improbables<span>Les organisateurs</span></p>
+    <div class="action-buttons">
+      <a class="register-button primary" href="inscription.html">S'inscrire à la soirée</a>
+      <a class="register-button" href="pronostics.html">Faire un pronostic</a>
+      <a class="register-button" href="chat.html">Chat organisateurs</a>
+    </div>
+  </section>
 
 </div>
 
