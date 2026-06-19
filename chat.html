@@ -78,6 +78,21 @@
           <span>Repondre a</span>
           <select name="recipientUsername" data-recipient></select>
         </label>
+        <div class="field" data-delivery-field hidden>
+          <span>Envoi</span>
+          <div class="message-mode" data-delivery-mode>
+            <label class="mode-choice">
+              <input type="radio" name="deliveryMode" value="now" checked data-delivery/>
+              <span class="mode-title">Maintenant</span>
+              <span class="mode-help">Publie et notifie tout de suite.</span>
+            </label>
+            <label class="mode-choice">
+              <input type="radio" name="deliveryMode" value="tomorrow10" data-delivery/>
+              <span class="mode-title">Demain 10h</span>
+              <span class="mode-help">Publie et notifie demain matin.</span>
+            </label>
+          </div>
+        </div>
         <p class="empty" data-mode-note>Message public : vous pouvez mentionner quelqu'un avec @pseudo.</p>
         <label class="field">
           <span>Message</span>
@@ -100,8 +115,10 @@ const feed = document.querySelector('[data-chat-feed]');
 const form = document.querySelector('[data-chat-form]');
 const notice = document.querySelector('[data-chat-notice]');
 const visibilityInputs = document.querySelectorAll('[data-visibility]');
+const deliveryInputs = document.querySelectorAll('[data-delivery]');
 const recipientField = document.querySelector('[data-recipient-field]');
 const recipientSelect = document.querySelector('[data-recipient]');
+const deliveryField = document.querySelector('[data-delivery-field]');
 const modeNote = document.querySelector('[data-mode-note]');
 const participantsNode = document.querySelector('[data-participants]');
 const messageInput = form.querySelector('[name="message"]');
@@ -202,6 +219,10 @@ function updatePrivateControls(){
     const input = choice.querySelector('input');
     choice.classList.toggle('is-selected', input.checked);
   });
+  deliveryField.hidden = !isOrganizer;
+  deliveryInputs.forEach(input => {
+    input.disabled = !isOrganizer;
+  });
   recipientField.hidden = !isPrivate || !isOrganizer;
   recipientSelect.disabled = !isPrivate || !isOrganizer;
   modeNote.textContent = isPrivate
@@ -252,6 +273,10 @@ visibilityInputs.forEach(input => {
   input.addEventListener('change', updatePrivateControls);
 });
 
+deliveryInputs.forEach(input => {
+  input.addEventListener('change', updatePrivateControls);
+});
+
 participantsNode.addEventListener('click', event => {
   const button = event.target.closest('[data-mention]');
   if(button){
@@ -270,6 +295,7 @@ form.addEventListener('submit', async event => {
       ...sessionParams(),
       visibility: data.visibility,
       recipientUsername: data.visibility === 'private' && PRCH_AUTH.getSession().username === ORGANIZER_USERNAME && data.recipientUsername ? data.recipientUsername : '',
+      deliveryMode: data.deliveryMode || 'now',
       message: data.message
     });
     form.reset();
@@ -277,7 +303,7 @@ form.addEventListener('submit', async event => {
     participants = Array.isArray(response.participants) ? response.participants : participants;
     renderParticipants();
     renderMessages(Array.isArray(response.messages) ? response.messages : []);
-    setNotice('Message envoye.');
+    setNotice(data.deliveryMode === 'tomorrow10' ? 'Message programme pour demain a 10h.' : 'Message envoye.');
   }catch(error){
     setNotice(error.message, true);
   }finally{

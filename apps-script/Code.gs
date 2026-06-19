@@ -281,7 +281,7 @@ function handleEscapeAction_(params) {
   }
 
   if (action === 'chatPost') {
-    return postChat_(params.username, params.userToken, params.visibility, params.recipientUsername, params.message, params.parentId);
+    return postChat_(params.username, params.userToken, params.visibility, params.recipientUsername, params.message, params.parentId, params.deliveryMode);
   }
 
   if (action === 'adminCreateUser') {
@@ -954,12 +954,13 @@ function readChat_(username, token) {
   return { messages, participants: listParticipants_().participants };
 }
 
-function postChat_(username, token, visibility, recipientUsername, message, parentId) {
+function postChat_(username, token, visibility, recipientUsername, message, parentId, deliveryMode) {
   const author = getValidatedUser_(username, token);
   const cleanVisibility = String(visibility || 'public') === 'private' ? 'private' : 'public';
   const cleanRecipient = normalizeUsername_(recipientUsername);
   const cleanMessage = String(message || '').trim();
   const cleanParentId = String(parentId || '').trim();
+  const cleanDeliveryMode = String(deliveryMode || 'now').trim();
 
   if (!cleanMessage) {
     throw new Error('Message requis');
@@ -983,7 +984,7 @@ function postChat_(username, token, visibility, recipientUsername, message, pare
   const mentions = extractMentions_(cleanMessage);
   const id = Utilities.getUuid();
   const createdAt = new Date();
-  const visibleAt = computeChatVisibleAt_(author, createdAt);
+  const visibleAt = computeChatVisibleAt_(author, createdAt, cleanDeliveryMode);
   const notifyNow = visibleAt.getTime() <= createdAt.getTime();
   const notifiedAt = '';
   SpreadsheetApp.getActive().getSheetByName(SHEET_CHAT).appendRow([
@@ -1128,16 +1129,14 @@ function installOrganizerMessageTrigger() {
     .create();
 }
 
-function computeChatVisibleAt_(author, createdAt) {
-  if (author.username !== ORGANIZER_USERNAME) {
+function computeChatVisibleAt_(author, createdAt, deliveryMode) {
+  if (author.username !== ORGANIZER_USERNAME || deliveryMode !== 'tomorrow10') {
     return createdAt;
   }
 
   const visibleAt = new Date(createdAt);
   visibleAt.setHours(10, 0, 0, 0);
-  if (createdAt.getTime() >= visibleAt.getTime()) {
-    visibleAt.setDate(visibleAt.getDate() + 1);
-  }
+  visibleAt.setDate(visibleAt.getDate() + 1);
   return visibleAt;
 }
 
