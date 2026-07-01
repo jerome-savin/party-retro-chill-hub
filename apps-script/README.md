@@ -27,6 +27,8 @@ PRCH_ADMIN_PASSWORD=mot-de-passe-admin
 PRCH_SITE_URL=https://party-retro-chill-hub.fr
 PRCH_MAIL_API_URL=https://party-retro-chill-hub.fr/api/mail.php
 PRCH_MAIL_API_KEY=la-meme-cle-que-le-secret-github-MAIL_API_KEY
+PRCH_PUSH_API_URL=https://party-retro-chill-hub.fr/api/push.php
+PRCH_PUSH_API_KEY=la-meme-cle-que-le-secret-github-PUSH_API_KEY
 ```
 
 7. Deployer en application web :
@@ -67,6 +69,39 @@ MAIL_FROM_NAME=Organisateurs Party Retro Chill Hub
 Le fichier `api/mail.php` envoie les emails via la boite OVH `organisateurs@party-retro-chill-hub.fr`. Les identifiants SMTP restent dans `api/config.php`, genere automatiquement au deploiement depuis les secrets GitHub. Les emails ne partent donc pas du compte Google personnel.
 
 L'endpoint exige une cle serveur `MAIL_API_KEY`, a transmettre dans l'en-tete `X-PRCH-Mail-Key`. Ne pas appeler cet endpoint directement depuis une page publique avec cette cle, car elle serait visible dans le navigateur.
+
+## PWA et notifications Push
+
+Le site peut etre installe comme PWA via `manifest.webmanifest` et `service-worker.js`. La page `connexion.html` permet a un participant connecte d'activer ou desactiver les notifications app pour son appareil.
+
+Les abonnements Push sont stockes dans la feuille `Push_Subscriptions`. Les notifications existantes utilisent deux canaux :
+
+- email via `api/mail.php`, si `notifyByEmail` est actif ;
+- notification app via `api/push.php`, si l'utilisateur a abonne son appareil.
+
+Secrets GitHub a ajouter pour le deploiement :
+
+```txt
+PUSH_API_KEY=une-cle-serveur-longue
+VAPID_PUBLIC_KEY=...
+VAPID_PRIVATE_KEY=...
+VAPID_SUBJECT=mailto:organisateurs@party-retro-chill-hub.fr
+```
+
+Pour generer les cles VAPID localement :
+
+```powershell
+php tools/generate-vapid-keys.php
+```
+
+Dans Apps Script, ajouter aussi les proprietes :
+
+```txt
+PRCH_PUSH_API_URL=https://party-retro-chill-hub.fr/api/push.php
+PRCH_PUSH_API_KEY=la-meme-cle-que-PUSH_API_KEY
+```
+
+Si `PRCH_PUSH_API_KEY` n'est pas renseignee, le script essaie `PRCH_MAIL_API_KEY` en secours. En production, une cle dediee est preferable.
 
 Exemple de test apres deploiement :
 

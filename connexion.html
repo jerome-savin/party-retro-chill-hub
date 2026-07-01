@@ -4,6 +4,9 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Connexion - Party Retro Chill Hub</title>
+  <link rel="icon" type="image/png" href="assets/favicons/favicon-prch.png"/>
+  <link rel="manifest" href="manifest.webmanifest"/>
+  <meta name="theme-color" content="#00f5ff"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
@@ -23,6 +26,7 @@
     .link-button:hover{color:var(--green)}
     .auth-note{color:rgba(238,240,255,.7);line-height:1.55}
     .session-preview{border:1px solid rgba(0,255,136,.42);border-radius:8px;background:rgba(0,255,136,.08);padding:1rem}
+    .push-panel{border-top:1px solid rgba(0,245,255,.18);margin-top:1rem;padding-top:1rem}
     .check-field{display:flex;align-items:flex-start;gap:.6rem;color:rgba(238,240,255,.76);line-height:1.45}
     .check-field input{width:auto;margin-top:.18rem}
     .check-field span{font-size:.86rem}
@@ -147,6 +151,14 @@
           </label>
           <button type="submit">Enregistrer mes preferences</button>
         </form>
+        <div class="push-panel">
+          <span class="current-team-label">Notifications app</span>
+          <p class="auth-note" data-push-status>Verification des notifications app...</p>
+          <div class="button-row" style="margin-top:.8rem">
+            <button type="button" data-push-enable hidden>Activer</button>
+            <button type="button" class="secondary" data-push-disable hidden>Desactiver</button>
+          </div>
+        </div>
         <div class="button-row" style="margin-top:1rem">
           <button type="button" class="secondary" data-auth-logout>Se deconnecter</button>
         </div>
@@ -156,6 +168,8 @@
 </main>
 <script src="assets/api-config.js"></script>
 <script src="assets/auth.js"></script>
+<script src="assets/push-config.js"></script>
+<script src="assets/pwa.js"></script>
 <script>
 const loginForm = document.querySelector('[data-login-form]');
 const registerForm = document.querySelector('[data-register-form]');

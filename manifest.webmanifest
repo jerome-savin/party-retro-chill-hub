@@ -1,0 +1,26 @@
+{
+  "name": "Party Retro Chill Hub",
+  "short_name": "PRCH",
+  "description": "Dashboard, chat et experiences Party Retro Chill Hub.",
+  "lang": "fr",
+  "start_url": "index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#07050f",
+  "theme_color": "#00f5ff",
+  "icons": [
+    {
+      "src": "assets/favicons/favicon-prch.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/favicons/favicon-prch.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

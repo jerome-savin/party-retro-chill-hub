@@ -1,0 +1,1 @@
+window.PRCH_VAPID_PUBLIC_KEY = window.PRCH_VAPID_PUBLIC_KEY || "";

@@ -3,6 +3,7 @@ const SHEET_PREDICTIONS = 'Pronostics_Organisateurs';
 const SHEET_USERS = 'Users';
 const SHEET_CHAT = 'Chat_Messages';
 const SHEET_NOTIFICATIONS = 'Notifications_Log';
+const SHEET_PUSH_SUBSCRIPTIONS = 'Push_Subscriptions';
 const SHEET_TEAMS = 'Escape_Teams';
 const SHEET_PROGRESS = 'Escape_Progress';
 const DEFAULT_TEAMS = [];
@@ -17,6 +18,7 @@ function setupSheets() {
   setupPredictionSheet_();
   setupUserSheet_();
   setupChatSheets_();
+  setupPushSheet_();
   setupEscapeSheets_();
 }
 
@@ -29,6 +31,7 @@ function doGet(event) {
       setupPredictionSheet_();
       setupUserSheet_();
       setupChatSheets_();
+      setupPushSheet_();
       if (params.action !== 'get') {
         setupEscapeSheets_();
       }
@@ -145,6 +148,15 @@ function setupChatSheets_() {
   if (!notifications) {
     notifications = ss.insertSheet(SHEET_NOTIFICATIONS);
     notifications.appendRow(['createdAt', 'type', 'recipientUsername', 'recipientEmail', 'subject', 'status', 'detail']);
+  }
+}
+
+function setupPushSheet_() {
+  const ss = SpreadsheetApp.getActive();
+  let sheet = ss.getSheetByName(SHEET_PUSH_SUBSCRIPTIONS);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_PUSH_SUBSCRIPTIONS);
+    sheet.appendRow(['username', 'endpoint', 'p256dh', 'auth', 'userAgent', 'createdAt', 'updatedAt', 'active']);
   }
 }
 
@@ -282,6 +294,14 @@ function handleEscapeAction_(params) {
 
   if (action === 'chatPost') {
     return postChat_(params.username, params.userToken, params.visibility, params.recipientUsername, params.message, params.parentId, params.deliveryMode);
+  }
+
+  if (action === 'pushSubscribe') {
+    return savePushSubscription_(params.username, params.userToken, params.subscription, params.userAgent);
+  }
+
+  if (action === 'pushUnsubscribe') {
+    return disablePushSubscription_(params.username, params.userToken, params.endpoint);
   }
 
   if (action === 'adminCreateUser') {
@@ -1016,8 +1036,8 @@ function notifySiteUpdate_(subject, message) {
     throw new Error('Message requis');
   }
 
-  const users = getUserRecords_().filter(user => user.active && user.notifyByEmail && user.email);
-  users.forEach(user => sendMail_(user, cleanSubject, cleanMessage, null, 'siteUpdate'));
+  const users = getUserRecords_().filter(user => user.active);
+  users.forEach(user => notifyUser_(user, cleanSubject, cleanMessage, 'siteUpdate'));
   return { sent: users.length };
 }
 
@@ -1091,9 +1111,91 @@ function getChatRows_() {
     .filter(message => message.id);
 }
 
+function savePushSubscription_(username, token, subscriptionJson, userAgent) {
+  const user = getValidatedUser_(username, token);
+  const subscription = JSON.parse(String(subscriptionJson || '{}'));
+  const endpoint = String(subscription.endpoint || '').trim();
+  const keys = subscription.keys || {};
+  const p256dh = String(keys.p256dh || '').trim();
+  const auth = String(keys.auth || '').trim();
+  const cleanUserAgent = String(userAgent || '').slice(0, 500);
+
+  if (!endpoint || !p256dh || !auth) {
+    throw new Error('Subscription push invalide');
+  }
+
+  const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_PUSH_SUBSCRIPTIONS);
+  const values = sheet.getDataRange().getValues();
+  for (let row = 2; row <= values.length; row++) {
+    if (String(values[row - 1][1] || '') === endpoint) {
+      sheet.getRange(row, 1, 1, 8).setValues([[
+        user.username,
+        endpoint,
+        p256dh,
+        auth,
+        cleanUserAgent,
+        values[row - 1][5] || new Date(),
+        new Date(),
+        true
+      ]]);
+      return { subscribed: true };
+    }
+  }
+
+  sheet.appendRow([user.username, endpoint, p256dh, auth, cleanUserAgent, new Date(), new Date(), true]);
+  return { subscribed: true };
+}
+
+function disablePushSubscription_(username, token, endpoint) {
+  const user = getValidatedUser_(username, token);
+  const cleanEndpoint = String(endpoint || '').trim();
+  if (!cleanEndpoint) {
+    return { unsubscribed: true };
+  }
+
+  getPushSubscriptionRows_(user.username)
+    .filter(subscription => subscription.endpoint === cleanEndpoint)
+    .forEach(subscription => {
+      SpreadsheetApp.getActive().getSheetByName(SHEET_PUSH_SUBSCRIPTIONS).getRange(subscription.row, 8).setValue(false);
+    });
+  return { unsubscribed: true };
+}
+
+function getPushSubscriptionRows_(username) {
+  const cleanUsername = normalizeUsername_(username);
+  const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_PUSH_SUBSCRIPTIONS);
+  return sheet.getDataRange().getValues().slice(1)
+    .map((row, index) => ({
+      row: index + 2,
+      username: normalizeUsername_(row[0]),
+      endpoint: String(row[1] || '').trim(),
+      keys: {
+        p256dh: String(row[2] || '').trim(),
+        auth: String(row[3] || '').trim()
+      },
+      active: row[7] === true
+    }))
+    .filter(subscription => subscription.username === cleanUsername && subscription.endpoint && subscription.keys.p256dh && subscription.keys.auth && subscription.active);
+}
+
+function deactivatePushEndpoints_(endpoints) {
+  const expired = Array.isArray(endpoints) ? endpoints : [];
+  if (!expired.length) {
+    return;
+  }
+  const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_PUSH_SUBSCRIPTIONS);
+  const values = sheet.getDataRange().getValues();
+  for (let row = 2; row <= values.length; row++) {
+    if (expired.includes(String(values[row - 1][1] || '').trim())) {
+      sheet.getRange(row, 8).setValue(false);
+    }
+  }
+}
+
 function publishScheduledOrganizerMessages() {
   setupChatSheets_();
   setupUserSheet_();
+  setupPushSheet_();
 
   const now = new Date();
   const usersByUsername = {};
@@ -1200,11 +1302,63 @@ function buildChatMailBody_(author, message) {
 }
 
 function notifyUser_(user, subject, body, type) {
-  if (!user.active || !user.notifyByEmail || !user.email) {
-    logNotification_(type, user, subject, 'skipped', 'notifications desactivees ou email manquant');
+  if (!user.active) {
+    logNotification_(type, user, subject, 'skipped', 'compte inactif');
     return;
   }
-  sendMail_(user, subject, body, null, type);
+
+  sendPush_(user, subject, body, getSiteUrl_() + '/chat.html', type);
+
+  if (user.notifyByEmail && user.email) {
+    sendMail_(user, subject, body, null, type);
+  } else {
+    logNotification_(type, user, subject, 'skipped', 'notifications mail desactivees ou email manquant');
+  }
+}
+
+function sendPush_(user, title, body, url, type) {
+  const props = PropertiesService.getScriptProperties();
+  const pushUrl = String(props.getProperty('PRCH_PUSH_API_URL') || 'https://party-retro-chill-hub.fr/api/push.php').trim();
+  const key = String(props.getProperty('PRCH_PUSH_API_KEY') || props.getProperty('PRCH_MAIL_API_KEY') || '').trim();
+  const subscriptions = getPushSubscriptionRows_(user.username);
+
+  if (!subscriptions.length) {
+    logNotification_(type, user, title, 'push-skipped', 'aucun appareil abonne');
+    return;
+  }
+  if (!key) {
+    logNotification_(type, user, title, 'push-skipped', 'PRCH_PUSH_API_KEY manquante');
+    return;
+  }
+
+  try {
+    const response = UrlFetchApp.fetch(pushUrl, {
+      method: 'post',
+      contentType: 'application/json',
+      headers: { 'X-PRCH-Push-Key': key },
+      payload: JSON.stringify({
+        title,
+        body,
+        url,
+        subscriptions: subscriptions.map(subscription => ({
+          endpoint: subscription.endpoint,
+          keys: subscription.keys
+        }))
+      }),
+      muteHttpExceptions: true
+    });
+    const status = response.getResponseCode();
+    const data = JSON.parse(response.getContentText() || '{}');
+    if (Array.isArray(data.expiredEndpoints)) {
+      deactivatePushEndpoints_(data.expiredEndpoints);
+    }
+    if (status < 200 || status >= 300 || data.ok === false) {
+      throw new Error('HTTP ' + status + ' - ' + response.getContentText().slice(0, 180));
+    }
+    logNotification_(type, user, title, 'push-sent', 'appareils: ' + (data.sent || 0));
+  } catch (error) {
+    logNotification_(type, user, title, 'push-error', error.message);
+  }
 }
 
 function sendMail_(user, subject, text, html, type) {

@@ -13,4 +13,8 @@ return [
     'smtp_password' => '',
     'mail_from' => 'organisateurs@party-retro-chill-hub.fr',
     'mail_from_name' => 'Organisateurs Party Retro Chill Hub',
+    'push_api_key' => '',
+    'vapid_public_key' => '',
+    'vapid_private_key' => '',
+    'vapid_subject' => 'mailto:organisateurs@party-retro-chill-hub.fr',
 ];

@@ -27,6 +27,10 @@ jobs:
           PRCH_AGENT_FRAGMENT: ${{ secrets.PRCH_AGENT_FRAGMENT }}
           PRCH_AGENT_INSTRUCTIONS: ${{ secrets.PRCH_AGENT_INSTRUCTIONS }}
           MAIL_API_KEY: ${{ secrets.MAIL_API_KEY }}
+          PUSH_API_KEY: ${{ secrets.PUSH_API_KEY }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
           OVH_SMTP_HOST: ${{ secrets.OVH_SMTP_HOST }}
           OVH_SMTP_PORT: ${{ secrets.OVH_SMTP_PORT }}
           OVH_SMTP_SECURE: ${{ secrets.OVH_SMTP_SECURE }}
@@ -53,8 +57,15 @@ jobs:
               'smtp_password' => base64_decode('$(b64 "$OVH_SMTP_PASSWORD")'),
               'mail_from' => base64_decode('$(b64 "${MAIL_FROM:-organisateurs@party-retro-chill-hub.fr}")'),
               'mail_from_name' => base64_decode('$(b64 "${MAIL_FROM_NAME:-Organisateurs Party Retro Chill Hub}")'),
+              'push_api_key' => base64_decode('$(b64 "${PUSH_API_KEY:-$MAIL_API_KEY}")'),
+              'vapid_public_key' => base64_decode('$(b64 "$VAPID_PUBLIC_KEY")'),
+              'vapid_private_key' => base64_decode('$(b64 "$VAPID_PRIVATE_KEY")'),
+              'vapid_subject' => base64_decode('$(b64 "${VAPID_SUBJECT:-mailto:organisateurs@party-retro-chill-hub.fr}")'),
           ];
           PHP
+          cat > assets/push-config.js <<JS
+          window.PRCH_VAPID_PUBLIC_KEY = atob('$(b64 "$VAPID_PUBLIC_KEY")');
+          JS
 
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
