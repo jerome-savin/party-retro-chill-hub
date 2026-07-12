@@ -21,6 +21,8 @@
     .chat-meta{display:flex;flex-wrap:wrap;gap:.45rem .7rem;align-items:center;color:rgba(238,240,255,.58);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em}
     .chat-author{font-family:'Barlow Condensed',Impact,sans-serif;font-size:1.25rem;color:#fff;text-transform:uppercase}
     .chat-body{margin-top:.45rem;color:rgba(238,240,255,.86);line-height:1.5;white-space:pre-wrap}
+    .chat-image-link{display:block;width:min(100%,520px);margin:.55rem 0;border:1px solid rgba(0,245,255,.28);border-radius:8px;overflow:hidden;background:rgba(0,245,255,.04);box-shadow:0 0 18px rgba(0,245,255,.08)}
+    .chat-image{display:block;width:100%;height:auto}
     .mention{display:inline-block;border:1px solid rgba(0,255,136,.38);border-radius:999px;background:rgba(0,255,136,.1);color:var(--green);padding:0 .28rem;font-weight:700}
     .chat-form{display:grid;gap:.8rem}
     .chat-form .field[hidden]{display:none}
@@ -154,9 +156,41 @@ function formatDateTime(value){
 }
 
 function renderMessageText(value){
+  const imagePattern = /!\[([^\]]*)\]\(([^)\s]+)\)/g;
+  let output = '';
+  let cursor = 0;
+  const source = String(value || '');
+  let match;
+
+  while((match = imagePattern.exec(source)) !== null){
+    output += renderTextSegment(source.slice(cursor, match.index));
+    const alt = match[1];
+    const url = sanitizeChatImageUrl(match[2]);
+    output += url
+      ? `<a class="chat-image-link" href="${escapeHtml(url)}" target="_blank" rel="noopener"><img class="chat-image" src="${escapeHtml(url)}" alt="${escapeHtml(alt || 'Image du message')}"/></a>`
+      : renderTextSegment(match[0]);
+    cursor = match.index + match[0].length;
+  }
+
+  output += renderTextSegment(source.slice(cursor));
+  return output;
+}
+
+function renderTextSegment(value){
   return escapeHtml(value).replace(/(^|\s)@([\p{L}\p{N}_.-]+)/gu, (match, prefix, username) => (
     `${prefix}<span class="mention">@${username}</span>`
   ));
+}
+
+function sanitizeChatImageUrl(value){
+  const url = String(value || '').trim();
+  if(!/^assets\/chat\/[a-zA-Z0-9/_-]+[a-zA-Z0-9_.-]*\.(png|jpe?g|gif|webp)$/i.test(url)){
+    return '';
+  }
+  if(url.includes('..') || url.includes('//')){
+    return '';
+  }
+  return url;
 }
 
 function initials(name){
