@@ -28,6 +28,8 @@
     .chat-meta{display:flex;flex-wrap:wrap;gap:.45rem .7rem;align-items:center;color:rgba(238,240,255,.58);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em}
     .chat-author{font-family:'Barlow Condensed',Impact,sans-serif;font-size:1.25rem;color:#fff;text-transform:uppercase}
     .chat-body{margin-top:.45rem;color:rgba(238,240,255,.86);line-height:1.5;white-space:pre-wrap}
+    .participation-card{border:1px solid rgba(255,230,0,.32);border-radius:8px;background:rgba(255,230,0,.07);padding:1rem;color:rgba(238,240,255,.82);line-height:1.55}
+    .participation-card strong{display:block;font-family:'Barlow Condensed',Impact,sans-serif;font-size:1.75rem;line-height:1;color:#fff;text-transform:uppercase;margin-bottom:.45rem}
     textarea{width:100%;min-height:8rem;resize:vertical;border:1px solid rgba(0,245,255,.28);border-radius:6px;background:#080713;color:var(--text);font:inherit;padding:.7rem .75rem;outline:none}
     textarea:focus{border-color:var(--yellow);box-shadow:0 0 0 3px rgba(255,230,0,.12)}
     @media (max-width:860px){.mission-layout{grid-template-columns:1fr}.chat-feed{max-height:none}}
@@ -51,6 +53,13 @@
   <section class="mission-layout">
     <section class="panel">
       <h2>Contenu de la mission</h2>
+      <div class="participation-card" data-no-mission hidden>
+        <strong>Aucune mission affectee</strong>
+        <p>Vous pouvez signaler aux organisateurs que vous souhaitez participer a une mission.</p>
+        <div class="button-row" style="margin-top:1rem">
+          <button type="button" data-participation-request>J'aimerais participer</button>
+        </div>
+      </div>
       <div class="mission-content" data-mission-content>
         <p class="empty">Chargement de la mission...</p>
       </div>
@@ -90,6 +99,8 @@ const tabsNode = document.querySelector('[data-mission-tabs]');
 const feed = document.querySelector('[data-chat-feed]');
 const form = document.querySelector('[data-chat-form]');
 const notice = document.querySelector('[data-notice]');
+const noMissionCard = document.querySelector('[data-no-mission]');
+const participationButton = document.querySelector('[data-participation-request]');
 let currentMission = null;
 
 function escapeHtml(value){
@@ -183,6 +194,18 @@ async function loadMission(missionId){
     missionId: missionId || ''
   });
   currentMission = data.mission;
+  if(!currentMission){
+    titleNode.textContent = 'Mission';
+    noMissionCard.hidden = false;
+    contentNode.hidden = true;
+    form.hidden = true;
+    feed.innerHTML = '<p class="empty">Le chat mission sera disponible des qu une mission vous sera affectee.</p>';
+    renderParticipants([]);
+    return;
+  }
+  noMissionCard.hidden = true;
+  contentNode.hidden = false;
+  form.hidden = false;
   titleNode.textContent = currentMission.title;
   renderOrganizerTabs();
   renderParticipants(Array.isArray(data.participants) ? data.participants : []);
@@ -219,6 +242,25 @@ form.addEventListener('submit', async event => {
     setNotice(error.message, true);
   }finally{
     button.disabled = false;
+  }
+});
+
+participationButton.addEventListener('click', async () => {
+  const session = PRCH_AUTH.getSession();
+  const displayName = session ? session.displayName || session.username : 'Un participant';
+  participationButton.disabled = true;
+  setNotice('Message aux organisateurs en cours d envoi...');
+  try{
+    await PRCH_AUTH.request('chatPost', {
+      ...sessionParams(),
+      visibility: 'private',
+      message: `${displayName} aimerait participer a une mission.`
+    });
+    setNotice('Message envoye aux organisateurs.');
+  }catch(error){
+    setNotice(error.message, true);
+  }finally{
+    participationButton.disabled = false;
   }
 });
 

@@ -114,6 +114,26 @@ Pour le rattrapage des personnes deja inscrites ou ayant deja vote, `adminCreate
 
 Pour le mot de passe oublie, `requestPasswordReset` recoit `identifier` et `resetUrl`, puis envoie un email si un compte actif correspond au pseudo ou a l'adresse mail. Le lien contient un token valable 30 minutes. `resetPassword` recoit ensuite `token` et `password`, met a jour le mot de passe et invalide le token.
 
+## Invitation et QR Code
+
+Le QR Code peut pointer vers `https://party-retro-chill-hub.fr/invitation.html`.
+
+Cette page est rattachee au compte utilisateur. Si la personne n'est pas connectee, elle est envoyee vers `connexion.html?next=invitation.html`, puis revient automatiquement sur le formulaire apres connexion ou creation de compte.
+
+Les reponses sont stockees dans la feuille `Invitation_Responses` :
+
+```txt
+username | displayName | partyAttendance | saturdayAttendance | diet | comment | createdAt | updatedAt
+```
+
+Chaque compte a une seule reponse modifiable. Les valeurs de presence sont `yes`, `no` ou `maybe`.
+
+La cagnote est configurable dans les fichiers du site, sans redeployer Apps Script :
+
+```txt
+assets/invitation-config.js
+```
+
 Le chat utilise `chatList` et `chatPost`. Les notifications mail partent via `api/mail.php`, jamais via Gmail, si `notifyByEmail` est actif pour le destinataire.
 Les messages prives des participants sont toujours adresses au compte special `organisateurs`. Creez donc un compte participant avec le pseudo `organisateurs` pour que les organisateurs puissent lire ces messages et repondre en prive.
 

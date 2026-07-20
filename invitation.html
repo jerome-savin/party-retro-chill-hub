@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Invitation - Party Retro Chill Hub</title>
+  <link rel="icon" type="image/png" href="assets/favicons/favicon-prch.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="assets/escape.css"/>
+  <style>
+    .invitation-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,340px);gap:1rem;align-items:start}
+    .response-form{display:grid;gap:.85rem}
+    .choice-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.55rem}
+    .choice-card{display:grid;gap:.25rem;border:1px solid rgba(0,245,255,.22);border-radius:8px;background:rgba(0,245,255,.045);padding:.65rem;cursor:pointer}
+    .choice-card input{position:absolute;opacity:0;pointer-events:none}
+    .choice-card:has(input:checked){border-color:rgba(0,255,136,.58);background:rgba(0,255,136,.08);box-shadow:0 0 16px rgba(0,255,136,.12)}
+    .choice-title{font-family:'Barlow Condensed',Impact,sans-serif;font-size:1.25rem;line-height:1;text-transform:uppercase;color:#fff}
+    .choice-help{color:rgba(238,240,255,.6);font-size:.75rem;line-height:1.35}
+    textarea{width:100%;min-height:7rem;resize:vertical;border:1px solid rgba(0,245,255,.28);border-radius:6px;background:#080713;color:var(--text);font:inherit;padding:.7rem .75rem;outline:none}
+    textarea:focus{border-color:var(--yellow);box-shadow:0 0 0 3px rgba(255,230,0,.12)}
+    .mission-ready{border:1px solid rgba(0,255,136,.35);border-radius:8px;background:rgba(0,255,136,.07);padding:1rem}
+    .mission-ready strong{display:block;font-family:'Barlow Condensed',Impact,sans-serif;font-size:1.7rem;line-height:1;color:#fff;text-transform:uppercase;margin:.25rem 0 .8rem}
+    .mission-waiting{margin-top:1rem;border:1px solid rgba(255,230,0,.28);border-radius:8px;background:rgba(255,230,0,.06);padding:1rem}
+    @media (max-width:760px){.invitation-layout,.choice-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<main class="shell">
+  <div class="topline">
+    <a class="nav-link" href="index.html">Dashboard</a>
+    <span>PRCH // Invitation</span>
+    <button type="button" class="secondary" data-auth-logout>Se deconnecter</button>
+  </div>
+
+  <section class="hero">
+    <h1>Invitation</h1>
+    <p class="subtitle">Confirmez votre presence, retrouvez la cagnote et accedez a votre mission.</p>
+  </section>
+
+  <section class="invitation-layout">
+    <section class="panel">
+      <h2>Votre reponse</h2>
+      <form class="response-form" data-invitation-form>
+        <div class="field">
+          <label>Presence a la soiree</label>
+          <div class="choice-grid">
+            <label class="choice-card">
+              <input type="radio" name="partyAttendance" value="yes" required/>
+              <span class="choice-title">Present</span>
+              <span class="choice-help">Je serai la.</span>
+            </label>
+            <label class="choice-card">
+              <input type="radio" name="partyAttendance" value="no"/>
+              <span class="choice-title">Absent</span>
+              <span class="choice-help">Je ne pourrai pas venir.</span>
+            </label>
+            <label class="choice-card">
+              <input type="radio" name="partyAttendance" value="maybe"/>
+              <span class="choice-title">A confirmer</span>
+              <span class="choice-help">Je vous redis vite.</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Presence le samedi</label>
+          <div class="choice-grid">
+            <label class="choice-card">
+              <input type="radio" name="saturdayAttendance" value="yes" required/>
+              <span class="choice-title">Present</span>
+              <span class="choice-help">Je participe au samedi.</span>
+            </label>
+            <label class="choice-card">
+              <input type="radio" name="saturdayAttendance" value="no"/>
+              <span class="choice-title">Absent</span>
+              <span class="choice-help">Pas disponible.</span>
+            </label>
+            <label class="choice-card">
+              <input type="radio" name="saturdayAttendance" value="maybe"/>
+              <span class="choice-title">A confirmer</span>
+              <span class="choice-help">Je ne sais pas encore.</span>
+            </label>
+          </div>
+        </div>
+
+        <label class="field">
+          <span>Restrictions alimentaires</span>
+          <textarea name="diet" maxlength="1000" placeholder="Allergies, regime particulier, rien a signaler..."></textarea>
+        </label>
+
+        <label class="field">
+          <span>Commentaire</span>
+          <textarea name="comment" maxlength="1500" placeholder="Un message pour les organisateurs..."></textarea>
+        </label>
+
+        <button type="submit">Valider ma reponse</button>
+      </form>
+      <p class="notice" data-notice aria-live="polite"></p>
+    </section>
+
+    <aside class="panel">
+      <h2>Apres validation</h2>
+      <p class="muted">La cagnote est accessible ici, et votre mission apparaitra des qu'elle sera affectee a votre compte.</p>
+      <div class="button-row" style="margin-top:1rem">
+        <a class="button" data-pot-link href="#" target="_blank" rel="noreferrer">Participer a la cagnote</a>
+      </div>
+      <div class="mission-ready" data-mission-box hidden style="margin-top:1rem">
+        <span class="current-team-label">Mission</span>
+        <strong data-mission-title></strong>
+        <a class="button" href="mission.html">Voir ma mission</a>
+      </div>
+      <div class="mission-waiting" data-mission-empty style="margin-top:1rem">
+        <p class="empty">Vous n'avez pas encore de mission assignee.</p>
+        <div class="button-row" style="margin-top:.8rem">
+          <button type="button" class="secondary" data-participation-request>J'aimerais participer</button>
+        </div>
+      </div>
+    </aside>
+  </section>
+</main>
+<script src="assets/api-config.js"></script>
+<script src="assets/auth.js"></script>
+<script src="assets/invitation-config.js"></script>
+<script>
+const form = document.querySelector('[data-invitation-form]');
+const notice = document.querySelector('[data-notice]');
+const potLink = document.querySelector('[data-pot-link]');
+const missionBox = document.querySelector('[data-mission-box]');
+const missionTitle = document.querySelector('[data-mission-title]');
+const missionEmpty = document.querySelector('[data-mission-empty]');
+const participationButton = document.querySelector('[data-participation-request]');
+const invitationConfig = window.PRCH_INVITATION_CONFIG || {};
+potLink.href = invitationConfig.potUrl || '#';
+
+function setNotice(message, isError = false){
+  notice.textContent = message;
+  notice.classList.toggle('is-error', isError);
+}
+
+function sessionParams(){
+  const session = PRCH_AUTH.getSession();
+  return {
+    username: session ? session.username : '',
+    userToken: session ? session.userToken : ''
+  };
+}
+
+function setRadio(name, value){
+  const input = form.querySelector(`[name="${name}"][value="${value}"]`);
+  if(input){
+    input.checked = true;
+  }
+}
+
+function renderState(data){
+  const response = data.response || null;
+  if(response){
+    setRadio('partyAttendance', response.partyAttendance);
+    setRadio('saturdayAttendance', response.saturdayAttendance);
+    form.diet.value = response.diet || '';
+    form.comment.value = response.comment || '';
+    setNotice('Votre reponse est enregistree. Vous pouvez la modifier si besoin.');
+  }
+  if(data.mission){
+    missionBox.hidden = false;
+    missionEmpty.hidden = true;
+    missionTitle.textContent = data.mission.title;
+  }else{
+    missionBox.hidden = true;
+    missionEmpty.hidden = false;
+  }
+}
+
+async function loadInvitation(){
+  const data = await PRCH_AUTH.request('invitationGet', sessionParams());
+  renderState(data);
+}
+
+form.addEventListener('submit', async event => {
+  event.preventDefault();
+  const button = form.querySelector('button[type="submit"]');
+  const data = Object.fromEntries(new FormData(form).entries());
+  button.disabled = true;
+  setNotice('Enregistrement...');
+  try{
+    const result = await PRCH_AUTH.request('invitationSave', {
+      ...sessionParams(),
+      partyAttendance: data.partyAttendance,
+      saturdayAttendance: data.saturdayAttendance,
+      diet: data.diet || '',
+      comment: data.comment || ''
+    });
+    renderState(result);
+    setNotice('Reponse enregistree. Merci !');
+  }catch(error){
+    setNotice(error.message, true);
+  }finally{
+    button.disabled = false;
+  }
+});
+
+participationButton.addEventListener('click', async () => {
+  const session = PRCH_AUTH.getSession();
+  const displayName = session ? session.displayName || session.username : 'Un participant';
+  participationButton.disabled = true;
+  setNotice('Message aux organisateurs en cours d envoi...');
+  try{
+    await PRCH_AUTH.request('chatPost', {
+      ...sessionParams(),
+      visibility: 'private',
+      message: `${displayName} aimerait participer a une mission.`
+    });
+    setNotice('Message envoye aux organisateurs.');
+  }catch(error){
+    setNotice(error.message, true);
+  }finally{
+    participationButton.disabled = false;
+  }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    loadInvitation().catch(error => setNotice(error.message, true));
+  }, 350);
+});
+</script>
+</body>
+</html>

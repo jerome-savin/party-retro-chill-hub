@@ -28,7 +28,8 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
 .status-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#00ff88;margin-right:6px;animation:pulse 2s ease-in-out infinite}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,255,136,.6)}50%{box-shadow:0 0 0 5px rgba(0,255,136,0)}}
 
-.topbar{position:fixed;top:0;left:0;width:100%;z-index:50;padding:.6rem 2rem;display:flex;justify-content:space-between;align-items:center;background:rgba(7,5,15,.9);border-bottom:1px solid rgba(0,245,255,.2);backdrop-filter:blur(8px);font-size:.6rem;letter-spacing:.2em;color:rgba(0,245,255,.5)}
+.topbar{position:fixed;top:0;left:0;width:100%;z-index:50;padding:.6rem 2rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;background:rgba(7,5,15,.9);border-bottom:1px solid rgba(0,245,255,.2);backdrop-filter:blur(8px);font-size:.6rem;letter-spacing:.2em;color:rgba(0,245,255,.5)}
+.topnav{display:flex;align-items:center;justify-content:center;gap:.6rem;flex-wrap:wrap;letter-spacing:.12em}
 .account-link{display:inline-flex;align-items:center;justify-content:center;min-height:1.8rem;border:1px solid rgba(0,245,255,.32);padding:.28rem .65rem;color:rgba(0,245,255,.82);text-decoration:none;background:rgba(0,245,255,.055);box-shadow:0 0 10px rgba(0,245,255,.08);text-shadow:0 0 8px rgba(0,245,255,.35)}
 .account-link:hover,.account-link:focus-visible{border-color:var(--yellow);color:var(--yellow);background:rgba(255,230,0,.065);outline:none}
 
@@ -110,7 +111,12 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
 
 <div class="topbar">
   <span><span class="status-dot"></span>SYS ONLINE <span class="blink">_</span></span>
-  <span style="color:rgba(0,245,255,.3);letter-spacing:.15em">PRCH // 2026</span>
+  <nav class="topnav" aria-label="Pages utiles">
+    <a class="account-link" href="connexion.html">Mon compte</a>
+    <a class="account-link" href="pronostics.html">Pronostic</a>
+    <a class="account-link" href="invitation.html">Inscription soiree</a>
+    <a class="account-link" href="chat.html">Chat</a>
+  </nav>
   <span>FLUX : <span style="color:#00ff88">ACTIF</span></span>
 </div>
 
@@ -259,7 +265,7 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
   <section class="action-panel" aria-label="Actions principales">
     <p class="organizers-note">N'essayez pas de nous identifier, on est méconnaissables et improbables<span>Les organisateurs</span></p>
     <div class="action-buttons">
-      <a class="register-button primary" href="inscription.html">S'inscrire à la soirée</a>
+      <a class="register-button primary" href="mission.html">Ma mission</a>
       <a class="register-button" href="pronostics.html">Faire un pronostic</a>
       <a class="register-button" href="chat.html">Chat</a>
     </div>

@@ -4,12 +4,14 @@ const SHEET_USERS = 'Users';
 const SHEET_CHAT = 'Chat_Messages';
 const SHEET_NOTIFICATIONS = 'Notifications_Log';
 const SHEET_MISSION_ASSIGNMENTS = 'Mission_Assignments';
+const SHEET_INVITATION_RESPONSES = 'Invitation_Responses';
 const SHEET_TEAMS = 'Escape_Teams';
 const SHEET_PROGRESS = 'Escape_Progress';
 const DEFAULT_TEAMS = [];
 const CHALLENGE_COUNT = 7;
 const ESCAPE_STATE_CACHE_KEY = 'escape_public_state_v2';
 const ESCAPE_STATE_CACHE_SECONDS = 60;
+const USER_LAST_LOGIN_CACHE_SECONDS = 300;
 const PASSWORD_RESET_TTL_MINUTES = 30;
 const ORGANIZER_USERNAME = 'organisateurs';
 const CHAT_THREAD_GENERAL = 'general';
@@ -35,6 +37,7 @@ function setupSheets() {
   setupUserSheet_();
   setupChatSheets_();
   setupMissionSheet_();
+  setupInvitationSheet_();
   setupEscapeSheets_();
 }
 
@@ -48,6 +51,7 @@ function doGet(event) {
       setupUserSheet_();
       setupChatSheets_();
       setupMissionSheet_();
+      setupInvitationSheet_();
       if (params.action !== 'get') {
         setupEscapeSheets_();
       }
@@ -220,6 +224,15 @@ function setupMissionSheet_() {
   }
 }
 
+function setupInvitationSheet_() {
+  const ss = SpreadsheetApp.getActive();
+  let sheet = ss.getSheetByName(SHEET_INVITATION_RESPONSES);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_INVITATION_RESPONSES);
+    sheet.appendRow(['username', 'displayName', 'partyAttendance', 'saturdayAttendance', 'diet', 'comment', 'createdAt', 'updatedAt']);
+  }
+}
+
 function saveRegistration_(params) {
   const firstName = String(params.firstName || '').trim();
   const email = String(params.email || '').trim();
@@ -293,8 +306,7 @@ function handleEscapeAction_(params) {
   }
 
   if (action === 'validateUserSession') {
-    validateUserToken_(params.username, params.userToken);
-    const user = getUserRecord_(params.username);
+    const user = getValidatedUser_(params.username, params.userToken);
     return { username: normalizeUsername_(params.username), displayName: user.displayName, avatar: user.avatar, email: user.email, phone: user.phone, notifyByEmail: user.notifyByEmail };
   }
 
@@ -328,6 +340,14 @@ function handleEscapeAction_(params) {
 
   if (action === 'missionAdminClear') {
     return clearMissionAssignment_(params.username, params.userToken, params.participantUsername);
+  }
+
+  if (action === 'invitationGet') {
+    return readInvitationResponse_(params.username, params.userToken);
+  }
+
+  if (action === 'invitationSave') {
+    return saveInvitationResponse_(params.username, params.userToken, params.partyAttendance, params.saturdayAttendance, params.diet, params.comment);
   }
 
   if (action === 'adminCreateUser') {
@@ -803,7 +823,7 @@ function loginUser_(username, password) {
     throw new Error('Pseudo ou mot de passe invalide');
   }
 
-  SpreadsheetApp.getActive().getSheetByName(SHEET_USERS).getRange(record.row, 10).setValue(new Date());
+  touchUserLastLogin_(record, true);
   return makeUserSession_(record.username, record.displayName, record.passwordHash, record.avatar);
 }
 
@@ -975,6 +995,13 @@ function adminCreateUser_(username, email, phone, notifyByEmail, avatar) {
 function readMissionState_(username, token, missionId) {
   const viewer = getValidatedUser_(username, token);
   const fallbackMissionId = viewer.username === ORGANIZER_USERNAME ? MISSIONS[0].id : getMissionIdForUser_(viewer.username);
+  if (!missionId && !fallbackMissionId) {
+    return {
+      mission: null,
+      participants: [],
+      assignments: []
+    };
+  }
   const mission = getMission_(missionId || fallbackMissionId);
   requireMissionAccess_(viewer, mission.id);
   return {
@@ -1032,6 +1059,83 @@ function clearMissionAssignment_(username, token, participantUsername) {
     }
   }
   return readMissionAdminState_(username, token);
+}
+
+function readInvitationResponse_(username, token) {
+  const user = getValidatedUser_(username, token);
+  const response = getInvitationResponseForUser_(user.username);
+  const missionId = getMissionIdForUser_(user.username);
+  const mission = missionId ? getMission_(missionId) : null;
+  return {
+    response,
+    mission
+  };
+}
+
+function saveInvitationResponse_(username, token, partyAttendance, saturdayAttendance, diet, comment) {
+  const user = getValidatedUser_(username, token);
+  const cleanPartyAttendance = normalizeAttendance_(partyAttendance);
+  const cleanSaturdayAttendance = normalizeAttendance_(saturdayAttendance);
+  const cleanDiet = String(diet || '').trim().slice(0, 1000);
+  const cleanComment = String(comment || '').trim().slice(0, 1500);
+  const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_INVITATION_RESPONSES);
+  const values = sheet.getDataRange().getValues();
+  const now = new Date();
+
+  for (let row = 2; row <= values.length; row++) {
+    if (normalizeUsername_(values[row - 1][0]) === user.username) {
+      sheet.getRange(row, 1, 1, 8).setValues([[
+        user.username,
+        user.displayName,
+        cleanPartyAttendance,
+        cleanSaturdayAttendance,
+        cleanDiet,
+        cleanComment,
+        values[row - 1][6] || now,
+        now
+      ]]);
+      return readInvitationResponse_(username, token);
+    }
+  }
+
+  sheet.appendRow([
+    user.username,
+    user.displayName,
+    cleanPartyAttendance,
+    cleanSaturdayAttendance,
+    cleanDiet,
+    cleanComment,
+    now,
+    now
+  ]);
+  return readInvitationResponse_(username, token);
+}
+
+function getInvitationResponseForUser_(username) {
+  const cleanUsername = normalizeUsername_(username);
+  const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_INVITATION_RESPONSES);
+  const row = sheet.getDataRange().getValues().slice(1)
+    .find(item => normalizeUsername_(item[0]) === cleanUsername);
+  if (!row) {
+    return null;
+  }
+  return {
+    username: normalizeUsername_(row[0]),
+    displayName: String(row[1] || '').trim(),
+    partyAttendance: String(row[2] || '').trim(),
+    saturdayAttendance: String(row[3] || '').trim(),
+    diet: String(row[4] || '').trim(),
+    comment: String(row[5] || '').trim(),
+    updatedAt: row[7] instanceof Date ? row[7].toISOString() : String(row[7] || '')
+  };
+}
+
+function normalizeAttendance_(value) {
+  const cleanValue = String(value || '').trim();
+  if (['yes', 'no', 'maybe'].includes(cleanValue)) {
+    return cleanValue;
+  }
+  throw new Error('Reponse de presence invalide');
 }
 
 function getMission_(missionId) {
@@ -1222,11 +1326,27 @@ function validateUserToken_(username, token) {
   if (!record.active || !record.passwordHash || makeUserToken_(record.username, record.passwordHash) !== String(token || '')) {
     throw new Error('Session utilisateur invalide');
   }
+  touchUserLastLogin_(record, false);
+  return record;
 }
 
 function getValidatedUser_(username, token) {
-  validateUserToken_(username, token);
-  return getUserRecord_(username);
+  return validateUserToken_(username, token);
+}
+
+function touchUserLastLogin_(user, force) {
+  if (!user || !user.row) {
+    return;
+  }
+
+  const cache = CacheService.getScriptCache();
+  const cacheKey = 'user_last_login_' + user.username;
+  if (!force && cache.get(cacheKey)) {
+    return;
+  }
+
+  SpreadsheetApp.getActive().getSheetByName(SHEET_USERS).getRange(user.row, 10).setValue(new Date());
+  cache.put(cacheKey, '1', USER_LAST_LOGIN_CACHE_SECONDS);
 }
 
 function getUserRecord_(username) {
