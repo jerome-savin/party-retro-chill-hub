@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin missions - Party Retro Chill Hub</title>
+  <link rel="icon" type="image/png" href="assets/favicons/favicon-prch.png"/>
+  <link rel="manifest" href="manifest.webmanifest"/>
+  <meta name="theme-color" content="#00f5ff"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="assets/escape.css"/>
+  <style>
+    .admin-layout{display:grid;grid-template-columns:minmax(260px,360px) minmax(0,1fr);gap:1rem;align-items:start}
+    select{width:100%;border:1px solid rgba(0,245,255,.28);border-radius:6px;background:#080713;color:var(--text);font:inherit;padding:.7rem .75rem;outline:none}
+    select:focus{border-color:var(--yellow);box-shadow:0 0 0 3px rgba(255,230,0,.12)}
+    .mission-list{display:grid;gap:.65rem}
+    .mission-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.75rem;align-items:center;border:1px solid rgba(0,245,255,.18);border-radius:8px;background:rgba(0,245,255,.04);padding:.75rem}
+    .mission-row strong{font-family:'Barlow Condensed',Impact,sans-serif;font-size:1.45rem;color:#fff;text-transform:uppercase}
+    .mission-row span{display:block;color:rgba(238,240,255,.65);font-size:.82rem;margin-top:.2rem}
+    .assignment-list{display:grid;gap:.5rem}
+    .assignment-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.65rem;align-items:center;border-bottom:1px solid rgba(255,255,255,.08);padding:.55rem 0}
+    .assignment-row:last-child{border-bottom:0}
+    @media (max-width:860px){.admin-layout{grid-template-columns:1fr}.mission-row{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<main class="shell">
+  <div class="topline">
+    <a class="nav-link" href="admin.html">Admin</a>
+    <span>PRCH // Admin missions</span>
+    <button type="button" class="secondary" data-auth-logout>Se deconnecter</button>
+  </div>
+
+  <section class="hero">
+    <h1>Missions</h1>
+    <p class="subtitle">Affectez chaque participant a une mission, puis ouvrez la page mission pour suivre son chat.</p>
+  </section>
+
+  <section class="admin-layout" data-admin-content hidden>
+    <aside class="panel">
+      <h2>Affecter</h2>
+      <form data-assign-form style="display:grid;gap:.8rem">
+        <label class="field">
+          <span>Participant</span>
+          <select name="participantUsername" required data-participant-select></select>
+        </label>
+        <label class="field">
+          <span>Mission</span>
+          <select name="missionId" required data-mission-select></select>
+        </label>
+        <button type="submit">Affecter</button>
+      </form>
+      <p class="notice" data-notice aria-live="polite"></p>
+    </aside>
+
+    <section class="panel">
+      <h2>Vue missions</h2>
+      <div class="mission-list" data-mission-list></div>
+    </section>
+  </section>
+</main>
+<script src="assets/api-config.js"></script>
+<script src="assets/auth.js"></script>
+<script src="assets/missions.js"></script>
+<script src="assets/push-config.js"></script>
+<script src="assets/pwa.js"></script>
+<script>
+const content = document.querySelector('[data-admin-content]');
+const notice = document.querySelector('[data-notice]');
+const form = document.querySelector('[data-assign-form]');
+const participantSelect = document.querySelector('[data-participant-select]');
+const missionSelect = document.querySelector('[data-mission-select]');
+const missionList = document.querySelector('[data-mission-list]');
+let participants = [];
+let assignments = [];
+let missions = [];
+
+function escapeHtml(value){
+  return String(value || '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
+}
+
+function setNotice(message, isError = false){
+  notice.textContent = message;
+  notice.classList.toggle('is-error', isError);
+}
+
+function sessionParams(){
+  const session = PRCH_AUTH.getSession();
+  return { username: session ? session.username : '', userToken: session ? session.userToken : '' };
+}
+
+function assignmentFor(username){
+  return assignments.find(item => item.username === username);
+}
+
+function render(){
+  participantSelect.innerHTML = participants
+    .filter(participant => participant.username !== 'organisateurs')
+    .map(participant => {
+      const assignment = assignmentFor(participant.username);
+      const suffix = assignment ? ` - ${missions.find(mission => mission.id === assignment.missionId)?.title || assignment.missionId}` : '';
+      return `<option value="${escapeHtml(participant.username)}">${escapeHtml(participant.displayName + suffix)}</option>`;
+    }).join('');
+  missionSelect.innerHTML = missions.map(mission => `<option value="${escapeHtml(mission.id)}">${escapeHtml(mission.title)}</option>`).join('');
+  missionList.innerHTML = missions.map(mission => {
+    const missionParticipants = mission.participants || [];
+    return `
+      <article class="mission-row">
+        <div>
+          <strong>${escapeHtml(mission.title)}</strong>
+          <span>${missionParticipants.length ? missionParticipants.map(item => `
+            <button type="button" class="secondary" data-clear="${escapeHtml(item.username)}">${escapeHtml(item.displayName)} x</button>
+          `).join(' ') : 'Aucun participant affecte'}</span>
+        </div>
+        <a class="button" href="mission.html?mission=${encodeURIComponent(mission.id)}">Ouvrir</a>
+      </article>
+    `;
+  }).join('');
+}
+
+async function loadAdmin(){
+  const data = await PRCH_AUTH.request('missionAdminList', sessionParams());
+  participants = Array.isArray(data.participants) ? data.participants : [];
+  assignments = Array.isArray(data.assignments) ? data.assignments : [];
+  missions = Array.isArray(data.missions) ? data.missions : [];
+  content.hidden = false;
+  render();
+}
+
+form.addEventListener('submit', async event => {
+  event.preventDefault();
+  const button = form.querySelector('button[type="submit"]');
+  const data = Object.fromEntries(new FormData(form).entries());
+  button.disabled = true;
+  setNotice('Affectation en cours...');
+  try{
+    const result = await PRCH_AUTH.request('missionAdminAssign', {
+      ...sessionParams(),
+      missionId: data.missionId,
+      participantUsername: data.participantUsername
+    });
+    participants = Array.isArray(result.participants) ? result.participants : participants;
+    assignments = Array.isArray(result.assignments) ? result.assignments : assignments;
+    missions = Array.isArray(result.missions) ? result.missions : missions;
+    render();
+    setNotice('Affectation enregistree.');
+  }catch(error){
+    setNotice(error.message, true);
+  }finally{
+    button.disabled = false;
+  }
+});
+
+missionList.addEventListener('click', async event => {
+  const button = event.target.closest('[data-clear]');
+  if(!button){
+    return;
+  }
+  button.disabled = true;
+  setNotice('Retrait de l affectation...');
+  try{
+    const result = await PRCH_AUTH.request('missionAdminClear', {
+      ...sessionParams(),
+      participantUsername: button.dataset.clear
+    });
+    participants = Array.isArray(result.participants) ? result.participants : participants;
+    assignments = Array.isArray(result.assignments) ? result.assignments : assignments;
+    missions = Array.isArray(result.missions) ? result.missions : missions;
+    render();
+    setNotice('Affectation retiree.');
+  }catch(error){
+    setNotice(error.message, true);
+  }finally{
+    button.disabled = false;
+  }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    loadAdmin().catch(error => setNotice(error.message, true));
+  }, 350);
+});
+</script>
+</body>
+</html>

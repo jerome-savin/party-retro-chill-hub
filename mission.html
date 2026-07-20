@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mission - Party Retro Chill Hub</title>
+  <link rel="icon" type="image/png" href="assets/favicons/favicon-prch.png"/>
+  <link rel="manifest" href="manifest.webmanifest"/>
+  <meta name="theme-color" content="#00f5ff"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="assets/escape.css"/>
+  <style>
+    .mission-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,360px);gap:1rem;align-items:start}
+    .mission-tabs{display:flex;flex-wrap:wrap;gap:.55rem;margin-bottom:1rem}
+    .mission-tabs button{min-height:2.1rem;padding:.45rem .7rem}
+    .mission-tabs button.is-active{border-color:var(--green);color:var(--green);background:rgba(0,255,136,.08)}
+    .participant-list{display:flex;flex-wrap:wrap;gap:.45rem}
+    .participant-chip{border:1px solid rgba(0,245,255,.25);border-radius:999px;background:rgba(0,245,255,.05);padding:.28rem .55rem;color:var(--cyan);font:700 .76rem 'Share Tech Mono',Consolas,monospace}
+    .mission-content{color:rgba(238,240,255,.86);line-height:1.6}
+    .mission-content h3{font-family:'Barlow Condensed',Impact,sans-serif;font-size:1.8rem;line-height:1;color:#fff;text-transform:uppercase;margin:.4rem 0 .6rem}
+    .mission-content ul{padding-left:1.1rem;margin:.6rem 0}
+    .chat-feed{display:grid;gap:.7rem;max-height:52vh;overflow:auto;padding-right:.25rem}
+    .chat-message{display:grid;grid-template-columns:42px minmax(0,1fr);gap:.7rem;border:1px solid rgba(0,245,255,.2);border-radius:8px;background:rgba(0,245,255,.045);padding:.85rem}
+    .chat-avatar{width:42px;aspect-ratio:1;border:1px solid rgba(0,245,255,.35);border-radius:999px;background:rgba(0,245,255,.08);overflow:hidden;display:grid;place-items:center;color:var(--yellow);font-family:'Barlow Condensed',Impact,sans-serif;font-size:1.2rem;text-transform:uppercase}
+    .chat-avatar img{width:100%;height:100%;object-fit:cover;object-position:center 28%;display:block}
+    .chat-meta{display:flex;flex-wrap:wrap;gap:.45rem .7rem;align-items:center;color:rgba(238,240,255,.58);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em}
+    .chat-author{font-family:'Barlow Condensed',Impact,sans-serif;font-size:1.25rem;color:#fff;text-transform:uppercase}
+    .chat-body{margin-top:.45rem;color:rgba(238,240,255,.86);line-height:1.5;white-space:pre-wrap}
+    textarea{width:100%;min-height:8rem;resize:vertical;border:1px solid rgba(0,245,255,.28);border-radius:6px;background:#080713;color:var(--text);font:inherit;padding:.7rem .75rem;outline:none}
+    textarea:focus{border-color:var(--yellow);box-shadow:0 0 0 3px rgba(255,230,0,.12)}
+    @media (max-width:860px){.mission-layout{grid-template-columns:1fr}.chat-feed{max-height:none}}
+  </style>
+</head>
+<body>
+<main class="shell">
+  <div class="topline">
+    <a class="nav-link" href="index.html">Dashboard</a>
+    <span>PRCH // Mission</span>
+    <button type="button" class="secondary" data-auth-logout>Se deconnecter</button>
+  </div>
+
+  <section class="hero">
+    <h1 data-mission-title>Mission</h1>
+    <p class="subtitle">Votre canal de preparation partage avec votre groupe et les organisateurs.</p>
+  </section>
+
+  <div class="mission-tabs" data-mission-tabs hidden></div>
+
+  <section class="mission-layout">
+    <section class="panel">
+      <h2>Contenu de la mission</h2>
+      <div class="mission-content" data-mission-content>
+        <p class="empty">Chargement de la mission...</p>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <h2>Participants</h2>
+      <div class="participant-list" data-participants></div>
+      <h2 style="margin-top:1.2rem">Chat mission</h2>
+      <div class="chat-feed" data-chat-feed>
+        <p class="empty">Chargement des messages...</p>
+      </div>
+      <form data-chat-form style="display:grid;gap:.75rem;margin-top:1rem">
+        <label class="field">
+          <span>Message</span>
+          <textarea name="message" required maxlength="1200" placeholder="Message pour la mission..."></textarea>
+        </label>
+        <button type="submit">Envoyer</button>
+      </form>
+      <p class="notice" data-notice aria-live="polite"></p>
+    </aside>
+  </section>
+</main>
+<script src="assets/api-config.js"></script>
+<script src="assets/auth.js"></script>
+<script src="assets/missions.js"></script>
+<script src="assets/push-config.js"></script>
+<script src="assets/pwa.js"></script>
+<script>
+const ORGANIZER_USERNAME = 'organisateurs';
+const params = new URLSearchParams(window.location.search);
+const requestedMissionId = params.get('mission') || '';
+const titleNode = document.querySelector('[data-mission-title]');
+const contentNode = document.querySelector('[data-mission-content]');
+const participantsNode = document.querySelector('[data-participants]');
+const tabsNode = document.querySelector('[data-mission-tabs]');
+const feed = document.querySelector('[data-chat-feed]');
+const form = document.querySelector('[data-chat-form]');
+const notice = document.querySelector('[data-notice]');
+let currentMission = null;
+
+function escapeHtml(value){
+  return String(value || '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
+}
+
+function formatDateTime(value){
+  const date = new Date(value);
+  if(Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat('fr-FR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }).format(date);
+}
+
+function initials(name){
+  return String(name || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase();
+}
+
+function setNotice(message, isError = false){
+  notice.textContent = message;
+  notice.classList.toggle('is-error', isError);
+}
+
+function sessionParams(){
+  const session = PRCH_AUTH.getSession();
+  return { username: session ? session.username : '', userToken: session ? session.userToken : '' };
+}
+
+function renderParticipants(participants){
+  participantsNode.innerHTML = participants.length
+    ? participants.map(participant => `<span class="participant-chip">${escapeHtml(participant.displayName)}</span>`).join('')
+    : '<p class="empty">Aucun participant affecte.</p>';
+}
+
+function renderMessages(messages){
+  const ordered = [...messages].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  if(!ordered.length){
+    feed.innerHTML = '<p class="empty">Aucun message pour cette mission.</p>';
+    return;
+  }
+  feed.innerHTML = ordered.map(item => {
+    const avatar = item.authorAvatar || '';
+    return `
+      <article class="chat-message">
+        <span class="chat-avatar">${avatar ? `<img src="${escapeHtml(avatar)}" alt="${escapeHtml(item.authorName)}"/>` : escapeHtml(initials(item.authorName))}</span>
+        <div>
+          <div class="chat-meta">
+            <strong class="chat-author">${escapeHtml(item.authorName)}</strong>
+            <span>${escapeHtml(formatDateTime(item.createdAt))}</span>
+          </div>
+          <div class="chat-body">${escapeHtml(item.message)}</div>
+        </div>
+      </article>
+    `;
+  }).join('');
+}
+
+async function loadMissionContent(mission){
+  try{
+    const response = await fetch(mission.contentUrl, { cache: 'no-cache' });
+    if(!response.ok) throw new Error('Contenu indisponible');
+    contentNode.innerHTML = await response.text();
+  }catch(error){
+    contentNode.innerHTML = '<p class="empty">Le contenu de cette mission n est pas encore disponible.</p>';
+  }
+}
+
+function renderOrganizerTabs(){
+  const session = PRCH_AUTH.getSession();
+  if(!session || session.username !== ORGANIZER_USERNAME){
+    return;
+  }
+  tabsNode.hidden = false;
+  tabsNode.innerHTML = window.PRCH_MISSIONS.map(mission => `
+    <button type="button" class="${currentMission && currentMission.id === mission.id ? 'is-active' : 'secondary'}" data-mission="${escapeHtml(mission.id)}">${escapeHtml(mission.title)}</button>
+  `).join('');
+}
+
+async function refreshChat(){
+  if(!currentMission) return;
+  const data = await PRCH_AUTH.request('chatList', {
+    ...sessionParams(),
+    threadType: 'mission',
+    threadId: currentMission.id
+  });
+  renderMessages(Array.isArray(data.messages) ? data.messages : []);
+}
+
+async function loadMission(missionId){
+  setNotice('');
+  const data = await PRCH_AUTH.request('missionGet', {
+    ...sessionParams(),
+    missionId: missionId || ''
+  });
+  currentMission = data.mission;
+  titleNode.textContent = currentMission.title;
+  renderOrganizerTabs();
+  renderParticipants(Array.isArray(data.participants) ? data.participants : []);
+  await loadMissionContent(currentMission);
+  await refreshChat();
+}
+
+tabsNode.addEventListener('click', event => {
+  const button = event.target.closest('[data-mission]');
+  if(button){
+    loadMission(button.dataset.mission).catch(error => setNotice(error.message, true));
+  }
+});
+
+form.addEventListener('submit', async event => {
+  event.preventDefault();
+  if(!currentMission) return;
+  const button = form.querySelector('button[type="submit"]');
+  const data = Object.fromEntries(new FormData(form).entries());
+  button.disabled = true;
+  setNotice('Envoi au serveur...');
+  try{
+    const response = await PRCH_AUTH.request('chatPost', {
+      ...sessionParams(),
+      threadType: 'mission',
+      threadId: currentMission.id,
+      visibility: 'public',
+      message: data.message
+    });
+    form.reset();
+    renderMessages(Array.isArray(response.messages) ? response.messages : []);
+    setNotice('Message envoye.');
+  }catch(error){
+    setNotice(error.message, true);
+  }finally{
+    button.disabled = false;
+  }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    loadMission(requestedMissionId).catch(error => {
+      contentNode.innerHTML = `<p class="empty">${escapeHtml(error.message)}</p>`;
+      setNotice(error.message, true);
+    });
+  }, 350);
+});
+</script>
+</body>
+</html>

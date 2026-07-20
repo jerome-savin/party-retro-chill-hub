@@ -3,6 +3,7 @@ const SHEET_PREDICTIONS = 'Pronostics_Organisateurs';
 const SHEET_USERS = 'Users';
 const SHEET_CHAT = 'Chat_Messages';
 const SHEET_NOTIFICATIONS = 'Notifications_Log';
+const SHEET_MISSION_ASSIGNMENTS = 'Mission_Assignments';
 const SHEET_TEAMS = 'Escape_Teams';
 const SHEET_PROGRESS = 'Escape_Progress';
 const DEFAULT_TEAMS = [];
@@ -11,12 +12,29 @@ const ESCAPE_STATE_CACHE_KEY = 'escape_public_state_v2';
 const ESCAPE_STATE_CACHE_SECONDS = 60;
 const PASSWORD_RESET_TTL_MINUTES = 30;
 const ORGANIZER_USERNAME = 'organisateurs';
+const CHAT_THREAD_GENERAL = 'general';
+const CHAT_THREAD_MISSION = 'mission';
+const DEFAULT_CHAT_THREAD_ID = 'main';
+const MISSIONS = [
+  { id: 'escape-game', title: 'Escape game', contentUrl: 'missions/escape-game.html' },
+  { id: 'deug-chimiste', title: 'DEUG Chimiste', contentUrl: 'missions/deug-chimiste.html' },
+  { id: 'achats-heros-ombre', title: "Achats les heros de l'ombre", contentUrl: 'missions/achats-heros-ombre.html' },
+  { id: 'hit-clip', title: 'Hit clip', contentUrl: 'missions/hit-clip.html' },
+  { id: 'autre-moitie', title: "L'autre moitie s'en mele", contentUrl: 'missions/autre-moitie.html' },
+  { id: 'feed-me-maybe', title: 'Feed me maybe', contentUrl: 'missions/feed-me-maybe.html' },
+  { id: 'bpm-2000', title: 'BPM 2000', contentUrl: 'missions/bpm-2000.html' },
+  { id: 'decoration', title: 'Decoration', contentUrl: 'missions/decoration.html' },
+  { id: 'logistique-installation', title: 'Logistique installation', contentUrl: 'missions/logistique-installation.html' },
+  { id: 'audio-video', title: 'Audio/video', contentUrl: 'missions/audio-video.html' },
+  { id: 'boisson', title: 'Boisson', contentUrl: 'missions/boisson.html' }
+];
 
 function setupSheets() {
   setupRegistrationSheet_();
   setupPredictionSheet_();
   setupUserSheet_();
   setupChatSheets_();
+  setupMissionSheet_();
   setupEscapeSheets_();
 }
 
@@ -29,6 +47,7 @@ function doGet(event) {
       setupPredictionSheet_();
       setupUserSheet_();
       setupChatSheets_();
+      setupMissionSheet_();
       if (params.action !== 'get') {
         setupEscapeSheets_();
       }
@@ -137,7 +156,7 @@ function setupChatSheets_() {
 
   if (!chat) {
     chat = ss.insertSheet(SHEET_CHAT);
-    chat.appendRow(['id', 'createdAt', 'authorUsername', 'authorName', 'visibility', 'recipientUsername', 'recipientName', 'message', 'mentions', 'parentId', 'visibleAt', 'notifiedAt']);
+    chat.appendRow(['id', 'createdAt', 'authorUsername', 'authorName', 'visibility', 'recipientUsername', 'recipientName', 'message', 'mentions', 'parentId', 'visibleAt', 'notifiedAt', 'threadType', 'threadId']);
   } else {
     migrateChatSheet_(chat);
   }
@@ -149,7 +168,7 @@ function setupChatSheets_() {
 }
 
 function migrateChatSheet_(sheet) {
-  const requiredHeader = ['id', 'createdAt', 'authorUsername', 'authorName', 'visibility', 'recipientUsername', 'recipientName', 'message', 'mentions', 'parentId', 'visibleAt', 'notifiedAt'];
+  const requiredHeader = ['id', 'createdAt', 'authorUsername', 'authorName', 'visibility', 'recipientUsername', 'recipientName', 'message', 'mentions', 'parentId', 'visibleAt', 'notifiedAt', 'threadType', 'threadId'];
   const values = sheet.getDataRange().getValues();
   if (!values.length) {
     sheet.appendRow(requiredHeader);
@@ -185,8 +204,19 @@ function migrateChatSheet_(sheet) {
       index.mentions === undefined ? existing[8] || '' : existing[index.mentions] || '',
       index.parentId === undefined ? existing[9] || '' : existing[index.parentId] || '',
       index.visibleAt === undefined ? createdAt : existing[index.visibleAt] || createdAt,
-      index.notifiedAt === undefined ? createdAt : existing[index.notifiedAt] || ''
+      index.notifiedAt === undefined ? createdAt : existing[index.notifiedAt] || '',
+      index.threadType === undefined ? CHAT_THREAD_GENERAL : existing[index.threadType] || CHAT_THREAD_GENERAL,
+      index.threadId === undefined ? DEFAULT_CHAT_THREAD_ID : existing[index.threadId] || DEFAULT_CHAT_THREAD_ID
     ]]);
+  }
+}
+
+function setupMissionSheet_() {
+  const ss = SpreadsheetApp.getActive();
+  let sheet = ss.getSheetByName(SHEET_MISSION_ASSIGNMENTS);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_MISSION_ASSIGNMENTS);
+    sheet.appendRow(['missionId', 'username', 'assignedAt', 'assignedBy', 'active']);
   }
 }
 
@@ -277,11 +307,27 @@ function handleEscapeAction_(params) {
   }
 
   if (action === 'chatList') {
-    return readChat_(params.username, params.userToken);
+    return readChat_(params.username, params.userToken, params.threadType, params.threadId);
   }
 
   if (action === 'chatPost') {
-    return postChat_(params.username, params.userToken, params.visibility, params.recipientUsername, params.message, params.parentId, params.deliveryMode);
+    return postChat_(params.username, params.userToken, params.visibility, params.recipientUsername, params.message, params.parentId, params.deliveryMode, params.threadType, params.threadId);
+  }
+
+  if (action === 'missionGet') {
+    return readMissionState_(params.username, params.userToken, params.missionId);
+  }
+
+  if (action === 'missionAdminList') {
+    return readMissionAdminState_(params.username, params.userToken);
+  }
+
+  if (action === 'missionAdminAssign') {
+    return setMissionAssignment_(params.username, params.userToken, params.missionId, params.participantUsername);
+  }
+
+  if (action === 'missionAdminClear') {
+    return clearMissionAssignment_(params.username, params.userToken, params.participantUsername);
   }
 
   if (action === 'adminCreateUser') {
@@ -926,8 +972,134 @@ function adminCreateUser_(username, email, phone, notifyByEmail, avatar) {
   return { username: cleanUsername, createdWithoutPassword: !row[6] };
 }
 
-function readChat_(username, token) {
+function readMissionState_(username, token, missionId) {
   const viewer = getValidatedUser_(username, token);
+  const fallbackMissionId = viewer.username === ORGANIZER_USERNAME ? MISSIONS[0].id : getMissionIdForUser_(viewer.username);
+  const mission = getMission_(missionId || fallbackMissionId);
+  requireMissionAccess_(viewer, mission.id);
+  return {
+    mission,
+    participants: getMissionParticipants_(mission.id),
+    assignments: getActiveMissionAssignments_().filter(assignment => assignment.missionId === mission.id)
+  };
+}
+
+function readMissionAdminState_(username, token) {
+  const organizer = getValidatedUser_(username, token);
+  requireOrganizerUser_(organizer);
+  const participants = listParticipants_().participants;
+  const assignments = getActiveMissionAssignments_();
+  return {
+    missions: MISSIONS.map(mission => ({
+      id: mission.id,
+      title: mission.title,
+      contentUrl: mission.contentUrl,
+      participants: getMissionParticipants_(mission.id)
+    })),
+    participants,
+    assignments
+  };
+}
+
+function setMissionAssignment_(username, token, missionId, participantUsername) {
+  const organizer = getValidatedUser_(username, token);
+  requireOrganizerUser_(organizer);
+  const mission = getMission_(missionId);
+  const participant = getUserRecord_(participantUsername);
+  const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_MISSION_ASSIGNMENTS);
+  const values = sheet.getDataRange().getValues();
+
+  for (let row = 2; row <= values.length; row++) {
+    if (normalizeUsername_(values[row - 1][1]) === participant.username && values[row - 1][4] === true) {
+      sheet.getRange(row, 5).setValue(false);
+    }
+  }
+
+  sheet.appendRow([mission.id, participant.username, new Date(), organizer.username, true]);
+  return readMissionAdminState_(username, token);
+}
+
+function clearMissionAssignment_(username, token, participantUsername) {
+  const organizer = getValidatedUser_(username, token);
+  requireOrganizerUser_(organizer);
+  const participant = getUserRecord_(participantUsername);
+  const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_MISSION_ASSIGNMENTS);
+  const values = sheet.getDataRange().getValues();
+
+  for (let row = 2; row <= values.length; row++) {
+    if (normalizeUsername_(values[row - 1][1]) === participant.username && values[row - 1][4] === true) {
+      sheet.getRange(row, 5).setValue(false);
+    }
+  }
+  return readMissionAdminState_(username, token);
+}
+
+function getMission_(missionId) {
+  const cleanMissionId = String(missionId || '').trim();
+  const mission = MISSIONS.find(item => item.id === cleanMissionId);
+  if (!mission) {
+    throw new Error('Mission inconnue');
+  }
+  return mission;
+}
+
+function getMissionIdForUser_(username) {
+  const assignment = getActiveMissionAssignments_().find(item => item.username === normalizeUsername_(username));
+  if (!assignment) {
+    return '';
+  }
+  return assignment.missionId;
+}
+
+function getActiveMissionAssignments_() {
+  const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_MISSION_ASSIGNMENTS);
+  return sheet.getDataRange().getValues().slice(1)
+    .map((row, index) => ({
+      row: index + 2,
+      missionId: String(row[0] || '').trim(),
+      username: normalizeUsername_(row[1]),
+      assignedAt: row[2],
+      assignedBy: normalizeUsername_(row[3]),
+      active: row[4] === true
+    }))
+    .filter(assignment => assignment.missionId && assignment.username && assignment.active);
+}
+
+function getMissionParticipants_(missionId) {
+  const usersByUsername = {};
+  getUserRecords_().forEach(user => {
+    usersByUsername[user.username] = user;
+  });
+  return getActiveMissionAssignments_()
+    .filter(assignment => assignment.missionId === missionId)
+    .map(assignment => usersByUsername[assignment.username])
+    .filter(Boolean)
+    .map(user => ({
+      username: user.username,
+      displayName: user.displayName,
+      avatar: user.avatar
+    }))
+    .sort((a, b) => a.displayName.localeCompare(b.displayName));
+}
+
+function requireMissionAccess_(user, missionId) {
+  if (user.username === ORGANIZER_USERNAME) {
+    return;
+  }
+  if (getMissionIdForUser_(user.username) !== missionId) {
+    throw new Error('Acces mission non autorise');
+  }
+}
+
+function requireOrganizerUser_(user) {
+  if (!user || user.username !== ORGANIZER_USERNAME) {
+    throw new Error('Acces reserve aux organisateurs');
+  }
+}
+
+function readChat_(username, token, threadType, threadId) {
+  const viewer = getValidatedUser_(username, token);
+  const thread = resolveChatThread_(viewer, threadType, threadId);
   const now = new Date();
   const usersByUsername = {};
   getUserRecords_().forEach(user => {
@@ -935,6 +1107,7 @@ function readChat_(username, token) {
   });
   const messages = getChatRows_()
     .filter(message => !message.visibleAt || message.visibleAt.getTime() <= now.getTime())
+    .filter(message => message.threadType === thread.type && message.threadId === thread.id)
     .filter(message => message.visibility === 'public' || message.authorUsername === viewer.username || message.recipientUsername === viewer.username)
     .map(message => ({
       id: message.id,
@@ -948,14 +1121,17 @@ function readChat_(username, token) {
       message: message.message,
       mentions: message.mentions,
       parentId: message.parentId,
-      visibleAt: message.visibleAt instanceof Date ? message.visibleAt.toISOString() : ''
+      visibleAt: message.visibleAt instanceof Date ? message.visibleAt.toISOString() : '',
+      threadType: message.threadType,
+      threadId: message.threadId
     }));
 
-  return { messages, participants: listParticipants_().participants };
+  return { messages, participants: thread.participants };
 }
 
-function postChat_(username, token, visibility, recipientUsername, message, parentId, deliveryMode) {
+function postChat_(username, token, visibility, recipientUsername, message, parentId, deliveryMode, threadType, threadId) {
   const author = getValidatedUser_(username, token);
+  const thread = resolveChatThread_(author, threadType, threadId);
   const cleanVisibility = String(visibility || 'public') === 'private' ? 'private' : 'public';
   const cleanRecipient = normalizeUsername_(recipientUsername);
   const cleanMessage = String(message || '').trim();
@@ -999,14 +1175,34 @@ function postChat_(username, token, visibility, recipientUsername, message, pare
     mentions.join(','),
     cleanParentId,
     visibleAt,
-    notifiedAt
+    notifiedAt,
+    thread.type,
+    thread.id
   ]);
 
   if (notifyNow) {
-    notifyChatRecipients_(author, recipient, mentions, cleanMessage, cleanVisibility);
+    notifyChatRecipients_(author, recipient, mentions, cleanMessage, cleanVisibility, thread);
     markChatMessageNotified_(id);
   }
-  return readChat_(username, token);
+  return readChat_(username, token, thread.type, thread.id);
+}
+
+function resolveChatThread_(user, threadType, threadId) {
+  const cleanType = String(threadType || CHAT_THREAD_GENERAL).trim();
+  const cleanId = String(threadId || DEFAULT_CHAT_THREAD_ID).trim();
+
+  if (cleanType === CHAT_THREAD_MISSION) {
+    const mission = getMission_(cleanId);
+    requireMissionAccess_(user, mission.id);
+    const participants = getMissionParticipants_(mission.id);
+    const organizer = getUserRecord_(ORGANIZER_USERNAME);
+    if (!participants.some(participant => participant.username === organizer.username)) {
+      participants.push({ username: organizer.username, displayName: organizer.displayName, avatar: organizer.avatar });
+    }
+    return { type: CHAT_THREAD_MISSION, id: mission.id, mission, participants };
+  }
+
+  return { type: CHAT_THREAD_GENERAL, id: DEFAULT_CHAT_THREAD_ID, participants: listParticipants_().participants };
 }
 
 function notifySiteUpdate_(subject, message) {
@@ -1086,7 +1282,9 @@ function getChatRows_() {
       mentions: String(row[8] || '').split(',').map(normalizeUsername_).filter(Boolean),
       parentId: String(row[9] || '').trim(),
       visibleAt: row[10] instanceof Date ? row[10] : row[1] instanceof Date ? row[1] : null,
-      notifiedAt: row[11] instanceof Date ? row[11] : null
+      notifiedAt: row[11] instanceof Date ? row[11] : null,
+      threadType: String(row[12] || CHAT_THREAD_GENERAL).trim(),
+      threadId: String(row[13] || DEFAULT_CHAT_THREAD_ID).trim()
     }))
     .filter(message => message.id);
 }
@@ -1109,7 +1307,11 @@ function publishScheduledOrganizerMessages() {
     .forEach(message => {
       const author = usersByUsername[message.authorUsername] || { username: message.authorUsername, displayName: message.authorName };
       const recipient = message.recipientUsername ? usersByUsername[message.recipientUsername] || null : null;
-      notifyChatRecipients_(author, recipient, message.mentions, message.message, message.visibility);
+      notifyChatRecipients_(author, recipient, message.mentions, message.message, message.visibility, {
+        type: message.threadType,
+        id: message.threadId,
+        participants: message.threadType === CHAT_THREAD_MISSION ? getMissionParticipants_(message.threadId) : listParticipants_().participants
+      });
       SpreadsheetApp.getActive().getSheetByName(SHEET_CHAT).getRange(message.row, 12).setValue(new Date());
       published++;
     });
@@ -1166,11 +1368,25 @@ function extractMentions_(message) {
   return Object.keys(mentions);
 }
 
-function notifyChatRecipients_(author, recipient, mentions, message, visibility) {
+function notifyChatRecipients_(author, recipient, mentions, message, visibility, thread) {
   const notified = {};
   const subject = visibility === 'private'
     ? 'Nouveau message prive sur Party Retro Chill Hub'
-    : 'Vous avez ete mentionne sur Party Retro Chill Hub';
+    : (thread && thread.type === CHAT_THREAD_MISSION ? 'Nouveau message dans votre mission PRCH' : 'Vous avez ete mentionne sur Party Retro Chill Hub');
+
+  if (thread && thread.type === CHAT_THREAD_MISSION) {
+    const organizer = getUserRecord_(ORGANIZER_USERNAME);
+    const recipients = [...(thread.participants || []), organizer];
+    recipients.forEach(item => {
+      if (!item || item.username === author.username || notified[item.username]) {
+        return;
+      }
+      const user = getUserRecord_(item.username);
+      notifyUser_(user, subject, buildChatMailBody_(author, message), 'missionChat');
+      notified[user.username] = true;
+    });
+    return;
+  }
 
   if (recipient && recipient.username !== author.username) {
     notifyUser_(recipient, subject, buildChatMailBody_(author, message), 'privateReply');

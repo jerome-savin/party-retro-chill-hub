@@ -117,10 +117,26 @@ Pour le mot de passe oublie, `requestPasswordReset` recoit `identifier` et `rese
 Le chat utilise `chatList` et `chatPost`. Les notifications mail partent via `api/mail.php`, jamais via Gmail, si `notifyByEmail` est actif pour le destinataire.
 Les messages prives des participants sont toujours adresses au compte special `organisateurs`. Creez donc un compte participant avec le pseudo `organisateurs` pour que les organisateurs puissent lire ces messages et repondre en prive.
 
-Les messages envoyes par le compte `organisateurs` sont programmes pour 10h :
+## Missions
 
-- avant 10h, ils deviennent visibles le jour meme a 10h ;
-- a partir de 10h, ils deviennent visibles le lendemain a 10h ;
+Les missions utilisent des contenus HTML versionnes dans `missions/*.html`. Pour modifier le texte d'une mission, editer le fichier correspondant, par exemple `missions/boisson.html`.
+
+Les affectations sont stockees dans la feuille `Mission_Assignments` :
+
+```txt
+missionId | username | assignedAt | assignedBy | active
+```
+
+Chaque participant ne peut avoir qu'une mission active. La page `admin-missions.html` est reservee au compte `organisateurs` et permet d'affecter ou retirer un participant. La page `mission.html` affiche la mission du participant connecte, ou la mission demandee pour les organisateurs avec `mission.html?mission=boisson`.
+
+Le chat des missions reutilise la feuille `Chat_Messages` avec `threadType=mission` et `threadId=<missionId>`. Le chat general reste `threadType=general` et `threadId=main`.
+
+## Messages organisateurs programmes
+
+Les messages envoyes par le compte `organisateurs` peuvent etre envoyes tout de suite ou programmes pour le lendemain a 10h depuis `chat.html`.
+
+Pour les messages programmes :
+
 - les notifications liees a ces messages sont envoyees par `publishScheduledOrganizerMessages()`, via le declencheur installe avec `installOrganizerMessageTrigger()`.
 
 Apps Script execute le declencheur autour de 10h, sans garantir la minute exacte.
