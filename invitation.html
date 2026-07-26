@@ -102,10 +102,7 @@
 
     <aside class="panel">
       <h2>Apres validation</h2>
-      <p class="muted">La cagnote est accessible ici, et votre mission apparaitra des qu'elle sera affectee a votre compte.</p>
-      <div class="button-row" style="margin-top:1rem">
-        <a class="button" data-pot-link href="#" target="_blank" rel="noreferrer">Participer a la cagnote</a>
-      </div>
+      <p class="muted">Votre mission apparaitra ici des qu'elle sera affectee a votre compte.</p>
       <div class="mission-ready" data-mission-box hidden style="margin-top:1rem">
         <span class="current-team-label">Mission</span>
         <strong data-mission-title></strong>
@@ -122,17 +119,13 @@
 </main>
 <script src="assets/api-config.js"></script>
 <script src="assets/auth.js"></script>
-<script src="assets/invitation-config.js"></script>
 <script>
 const form = document.querySelector('[data-invitation-form]');
 const notice = document.querySelector('[data-notice]');
-const potLink = document.querySelector('[data-pot-link]');
 const missionBox = document.querySelector('[data-mission-box]');
 const missionTitle = document.querySelector('[data-mission-title]');
 const missionEmpty = document.querySelector('[data-mission-empty]');
 const participationButton = document.querySelector('[data-participation-request]');
-const invitationConfig = window.PRCH_INVITATION_CONFIG || {};
-potLink.href = invitationConfig.potUrl || '#';
 
 function setNotice(message, isError = false){
   notice.textContent = message;
