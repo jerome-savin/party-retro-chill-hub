@@ -36,7 +36,7 @@
 
   <section class="hero">
     <h1>Invitation</h1>
-    <p class="subtitle">Confirmez votre presence, retrouvez la cagnote et accedez a votre mission.</p>
+    <p class="subtitle">Confirmez votre presence et accedez a votre mission.</p>
   </section>
 
   <section class="invitation-layout">
@@ -45,6 +45,7 @@
       <form class="response-form" data-invitation-form>
         <div class="field">
           <label>Presence a la soiree</label>
+          <p class="choice-help">17h15 - 23h</p>
           <div class="choice-grid">
             <label class="choice-card">
               <input type="radio" name="partyAttendance" value="yes" required/>
@@ -66,6 +67,7 @@
 
         <div class="field">
           <label>Presence le samedi</label>
+          <p class="choice-help">Predication le matin, repas le midi ensemble, et assemblee generale l'apres-midi.</p>
           <div class="choice-grid">
             <label class="choice-card">
               <input type="radio" name="saturdayAttendance" value="yes" required/>
@@ -102,7 +104,7 @@
 
     <aside class="panel">
       <h2>Apres validation</h2>
-      <p class="muted">Votre mission apparaitra ici des qu'elle sera affectee a votre compte.</p>
+      <p class="empty" data-mission-locked style="margin-top:1rem">Validez votre reponse pour afficher l'etat de votre mission.</p>
       <div class="mission-ready" data-mission-box hidden style="margin-top:1rem">
         <span class="current-team-label">Mission</span>
         <strong data-mission-title></strong>
@@ -125,6 +127,7 @@ const notice = document.querySelector('[data-notice]');
 const missionBox = document.querySelector('[data-mission-box]');
 const missionTitle = document.querySelector('[data-mission-title]');
 const missionEmpty = document.querySelector('[data-mission-empty]');
+const missionLocked = document.querySelector('[data-mission-locked]');
 const participationButton = document.querySelector('[data-participation-request]');
 
 function setNotice(message, isError = false){
@@ -156,6 +159,13 @@ function renderState(data){
     form.comment.value = response.comment || '';
     setNotice('Votre reponse est enregistree. Vous pouvez la modifier si besoin.');
   }
+  if(!response){
+    missionLocked.hidden = false;
+    missionBox.hidden = true;
+    missionEmpty.hidden = true;
+    return;
+  }
+  missionLocked.hidden = true;
   if(data.mission){
     missionBox.hidden = false;
     missionEmpty.hidden = true;

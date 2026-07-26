@@ -11,6 +11,8 @@ const DEFAULT_TEAMS = [];
 const CHALLENGE_COUNT = 7;
 const ESCAPE_STATE_CACHE_KEY = 'escape_public_state_v2';
 const ESCAPE_STATE_CACHE_SECONDS = 60;
+const INVITATION_BOARD_CACHE_KEY = 'invitation_board_v1';
+const INVITATION_BOARD_CACHE_SECONDS = 60;
 const USER_LAST_LOGIN_CACHE_SECONDS = 300;
 const PASSWORD_RESET_TTL_MINUTES = 30;
 const ORGANIZER_USERNAME = 'organisateurs';
@@ -18,17 +20,17 @@ const CHAT_THREAD_GENERAL = 'general';
 const CHAT_THREAD_MISSION = 'mission';
 const DEFAULT_CHAT_THREAD_ID = 'main';
 const MISSIONS = [
-  { id: 'escape-game', title: 'Escape game', contentUrl: 'missions/escape-game.html' },
-  { id: 'deug-chimiste', title: 'DEUG Chimiste', contentUrl: 'missions/deug-chimiste.html' },
-  { id: 'achats-heros-ombre', title: "Achats les heros de l'ombre", contentUrl: 'missions/achats-heros-ombre.html' },
-  { id: 'hit-clip', title: 'Hit clip', contentUrl: 'missions/hit-clip.html' },
-  { id: 'autre-moitie', title: "L'autre moitie s'en mele", contentUrl: 'missions/autre-moitie.html' },
-  { id: 'feed-me-maybe', title: 'Feed me maybe', contentUrl: 'missions/feed-me-maybe.html' },
-  { id: 'bpm-2000', title: 'BPM 2000', contentUrl: 'missions/bpm-2000.html' },
-  { id: 'decoration', title: 'Decoration', contentUrl: 'missions/decoration.html' },
-  { id: 'logistique-installation', title: 'Logistique installation', contentUrl: 'missions/logistique-installation.html' },
-  { id: 'audio-video', title: 'Audio/video', contentUrl: 'missions/audio-video.html' },
-  { id: 'boisson', title: 'Boisson', contentUrl: 'missions/boisson.html' }
+  { id: 'escape-game', title: 'Escape game' },
+  { id: 'deug-chimiste', title: 'DEUG Chimiste' },
+  { id: 'achats-heros-ombre', title: "Achats les heros de l'ombre" },
+  { id: 'hit-clip', title: 'Hit clip' },
+  { id: 'autre-moitie', title: "L'autre moitie s'en mele" },
+  { id: 'feed-me-maybe', title: 'Feed me maybe' },
+  { id: 'bpm-2000', title: 'BPM 2000' },
+  { id: 'decoration', title: 'Decoration' },
+  { id: 'logistique-installation', title: 'Logistique installation' },
+  { id: 'audio-video', title: 'Audio/video' },
+  { id: 'boisson', title: 'Boisson' }
 ];
 
 function setupSheets() {
@@ -350,13 +352,19 @@ function handleEscapeAction_(params) {
     return saveInvitationResponse_(params.username, params.userToken, params.partyAttendance, params.saturdayAttendance, params.diet, params.comment);
   }
 
+  if (action === 'invitationBoardGet') {
+    return readInvitationBoard_();
+  }
+
   if (action === 'adminCreateUser') {
-    requireAdmin_(params.adminPassword);
-    return adminCreateUser_(params.username, params.email, params.phone, params.notifyByEmail, params.avatar);
+    const organizer = getValidatedUser_(params.username, params.userToken);
+    requireOrganizerUser_(organizer);
+    return adminCreateUser_(params.participantUsername, params.email, params.phone, params.notifyByEmail, params.avatar);
   }
 
   if (action === 'adminNotifySiteUpdate') {
-    requireAdmin_(params.adminPassword);
+    const organizer = getValidatedUser_(params.username, params.userToken);
+    requireOrganizerUser_(organizer);
     return notifySiteUpdate_(params.subject, params.message);
   }
 
@@ -380,30 +388,35 @@ function handleEscapeAction_(params) {
   }
 
   if (action === 'adminList') {
-    requireAdmin_(params.adminPassword);
+    const organizer = getValidatedUser_(params.username, params.userToken);
+    requireOrganizerUser_(organizer);
     return readEscapeAdminState_();
   }
 
   if (action === 'adminCreateTeam') {
-    requireAdmin_(params.adminPassword);
+    const organizer = getValidatedUser_(params.username, params.userToken);
+    requireOrganizerUser_(organizer);
     createEscapeTeam_(params.name, params.password);
     return readEscapeAdminState_();
   }
 
   if (action === 'adminSetPassword') {
-    requireAdmin_(params.adminPassword);
+    const organizer = getValidatedUser_(params.username, params.userToken);
+    requireOrganizerUser_(organizer);
     setEscapeTeamPassword_(params.team, params.password);
     return readEscapeAdminState_();
   }
 
   if (action === 'adminResetTeam') {
-    requireAdmin_(params.adminPassword);
+    const organizer = getValidatedUser_(params.username, params.userToken);
+    requireOrganizerUser_(organizer);
     resetEscapeTeam_(params.team);
     return readEscapeAdminState_();
   }
 
   if (action === 'adminDeleteTeam') {
-    requireAdmin_(params.adminPassword);
+    const organizer = getValidatedUser_(params.username, params.userToken);
+    requireOrganizerUser_(organizer);
     deleteEscapeTeam_(params.team);
     return readEscapeAdminState_();
   }
@@ -953,9 +966,6 @@ function adminCreateUser_(username, email, phone, notifyByEmail, avatar) {
   if (!cleanUsername || cleanUsername.length < 3) {
     throw new Error('Pseudo requis');
   }
-  if (!cleanEmail) {
-    throw new Error('Email requis');
-  }
   if (!cleanAvatar) {
     throw new Error('Image requise');
   }
@@ -1020,7 +1030,6 @@ function readMissionAdminState_(username, token) {
     missions: MISSIONS.map(mission => ({
       id: mission.id,
       title: mission.title,
-      contentUrl: mission.contentUrl,
       participants: getMissionParticipants_(mission.id)
     })),
     participants,
@@ -1094,6 +1103,7 @@ function saveInvitationResponse_(username, token, partyAttendance, saturdayAtten
         values[row - 1][6] || now,
         now
       ]]);
+      invalidateInvitationBoardCache_();
       return readInvitationResponse_(username, token);
     }
   }
@@ -1108,7 +1118,58 @@ function saveInvitationResponse_(username, token, partyAttendance, saturdayAtten
     now,
     now
   ]);
+  invalidateInvitationBoardCache_();
   return readInvitationResponse_(username, token);
+}
+
+function readInvitationBoard_() {
+  const cached = CacheService.getScriptCache().get(INVITATION_BOARD_CACHE_KEY);
+  if (cached) {
+    return JSON.parse(cached);
+  }
+
+  const responsesByUsername = {};
+  SpreadsheetApp.getActive().getSheetByName(SHEET_INVITATION_RESPONSES)
+    .getDataRange()
+    .getValues()
+    .slice(1)
+    .forEach(row => {
+      const username = normalizeUsername_(row[0]);
+      if (username) {
+        responsesByUsername[username] = String(row[2] || '').trim();
+      }
+    });
+
+  const buckets = {
+    yes: [],
+    maybe: [],
+    no: [],
+    none: []
+  };
+
+  getUserRecords_()
+    .filter(user => user.active && user.username !== ORGANIZER_USERNAME)
+    .forEach(user => {
+      const status = responsesByUsername[user.username] || 'none';
+      const bucket = buckets[status] ? status : 'none';
+      buckets[bucket].push({
+        username: user.username,
+        displayName: user.displayName,
+        avatar: user.avatar
+      });
+    });
+
+  Object.keys(buckets).forEach(status => {
+    buckets[status].sort((a, b) => a.displayName.localeCompare(b.displayName));
+  });
+
+  const board = { buckets };
+  CacheService.getScriptCache().put(INVITATION_BOARD_CACHE_KEY, JSON.stringify(board), INVITATION_BOARD_CACHE_SECONDS);
+  return board;
+}
+
+function invalidateInvitationBoardCache_() {
+  CacheService.getScriptCache().remove(INVITATION_BOARD_CACHE_KEY);
 }
 
 function getInvitationResponseForUser_(username) {
@@ -1621,16 +1682,6 @@ function normalizeUsername_(username) {
 
 function makeResetToken_() {
   return Utilities.getUuid() + '-' + Utilities.getUuid();
-}
-
-function requireAdmin_(adminPassword) {
-  const expected = PropertiesService.getScriptProperties().getProperty('PRCH_ADMIN_PASSWORD');
-  if (!expected) {
-    throw new Error('Mot de passe admin non configure dans Script Properties');
-  }
-  if (String(adminPassword || '') !== expected) {
-    throw new Error('Mot de passe admin invalide');
-  }
 }
 
 function makeTeamToken_(team, passwordHash) {

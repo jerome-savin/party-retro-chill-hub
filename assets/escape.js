@@ -1,6 +1,5 @@
 const ESCAPE_KEY = "prch_escape_state_v1";
 const SESSION_KEY = "prch_escape_team_session_v1";
-const ADMIN_KEY = "prch_escape_admin_password_v1";
 const API_URL = (window.PRCH_API_URL || "").trim();
 const CHALLENGES = [
   { id: 1, title: "L'acheteur compulsif", clue: "Fragment 01: le point de depart est cache dans la liste." },
@@ -141,26 +140,23 @@ function apiRequest(action, payload = {}){
   });
 }
 
-async function loadState(adminPassword){
+async function loadState(){
   if(!API_URL){
     return loadLocalState();
   }
   try{
-    const remote = await apiRequest(adminPassword ? "adminList" : "get", adminPassword ? { adminPassword } : {});
+    const remote = await apiRequest("get");
     const local = loadLocalState();
     const state = normalizeState({ ...remote, selectedTeam: local.selectedTeam });
     saveLocalState(state);
     return state;
   }catch(error){
-    if(adminPassword){
-      throw error;
-    }
     return loadLocalState();
   }
 }
 
-async function refreshState(currentState, adminPassword){
-  const remote = await apiRequest(adminPassword ? "adminList" : "get", adminPassword ? { adminPassword } : {});
+async function refreshState(currentState){
+  const remote = await apiRequest("get");
   const selectedTeam = currentState.selectedTeam;
   const state = normalizeState({ ...remote, selectedTeam });
   saveLocalState(state);
@@ -439,22 +435,44 @@ async function initFinale(){
 async function initAdminPage(){
   let state = defaultState();
   const root = document.querySelector("[data-admin]");
-  const adminPassword = root.querySelector("[data-admin-password]");
+  const adminContent = root.querySelector("[data-admin-content]");
   const teamName = root.querySelector("[data-team-name]");
   const teamPassword = root.querySelector("[data-team-password]");
-  const loginButton = root.querySelector("[data-admin-login]");
   const createButton = root.querySelector("[data-admin-create]");
   const list = root.querySelector("[data-admin-list]");
   const notice = root.querySelector("[data-notice]");
-  const storedPassword = sessionStorage.getItem(ADMIN_KEY);
-  if(storedPassword){
-    adminPassword.value = storedPassword;
+
+  function adminSessionParams(){
+    const session = window.PRCH_AUTH ? PRCH_AUTH.getSession() : null;
+    return {
+      username: session ? session.username : "",
+      userToken: session ? session.userToken : ""
+    };
   }
 
   async function refresh(){
-    state = normalizeState(await apiRequest("adminList", { adminPassword: adminPassword.value }));
-    sessionStorage.setItem(ADMIN_KEY, adminPassword.value);
+    state = normalizeState(await apiRequest("adminList", adminSessionParams()));
     render();
+  }
+
+  async function ensureOrganizerAccess(){
+    const session = window.PRCH_AUTH ? PRCH_AUTH.getSession() : null;
+    if(!session){
+      return;
+    }
+    try{
+      const data = await PRCH_AUTH.request("validateUserSession", adminSessionParams());
+      if(data.username !== "organisateurs"){
+        setNotice(notice, "Acces reserve aux organisateurs.", true);
+        return;
+      }
+      adminContent.hidden = false;
+      setNotice(notice, "Chargement des equipes...");
+      await refresh();
+      setNotice(notice, "Acces organisateurs OK.");
+    }catch(error){
+      setNotice(notice, error.message, true);
+    }
   }
 
   function render(){
@@ -470,27 +488,16 @@ async function initAdminPage(){
     )).join("") : '<p class="empty">Aucune equipe.</p>';
   }
 
-  loginButton.addEventListener("click", async () => {
-    setNotice(notice, "Connexion admin...");
-    try{
-      await refresh();
-      setNotice(notice, "Acces admin OK.");
-    }catch(error){
-      setNotice(notice, error.message, true);
-    }
-  });
-
   createButton.addEventListener("click", async () => {
     setNotice(notice, "Creation equipe...");
     try{
       state = normalizeState(await apiRequest("adminCreateTeam", {
-        adminPassword: adminPassword.value,
+        ...adminSessionParams(),
         name: teamName.value,
         password: teamPassword.value
       }));
       teamName.value = "";
       teamPassword.value = "";
-      sessionStorage.setItem(ADMIN_KEY, adminPassword.value);
       render();
       setNotice(notice, "Equipe creee.");
     }catch(error){
@@ -506,7 +513,7 @@ async function initAdminPage(){
     const team = button.dataset.reset || button.dataset.password || button.dataset.delete;
     try{
       if(button.dataset.reset){
-        state = normalizeState(await apiRequest("adminResetTeam", { adminPassword: adminPassword.value, team }));
+        state = normalizeState(await apiRequest("adminResetTeam", { ...adminSessionParams(), team }));
         setNotice(notice, "Progression remise a zero.");
       }
       if(button.dataset.password){
@@ -514,14 +521,14 @@ async function initAdminPage(){
         if(!nextPassword){
           return;
         }
-        state = normalizeState(await apiRequest("adminSetPassword", { adminPassword: adminPassword.value, team, password: nextPassword }));
+        state = normalizeState(await apiRequest("adminSetPassword", { ...adminSessionParams(), team, password: nextPassword }));
         setNotice(notice, "Mot de passe mis a jour.");
       }
       if(button.dataset.delete){
         if(!window.confirm(`Supprimer ${team} et sa progression ?`)){
           return;
         }
-        state = normalizeState(await apiRequest("adminDeleteTeam", { adminPassword: adminPassword.value, team }));
+        state = normalizeState(await apiRequest("adminDeleteTeam", { ...adminSessionParams(), team }));
         setNotice(notice, "Equipe supprimee.");
       }
       render();
@@ -529,6 +536,8 @@ async function initAdminPage(){
       setNotice(notice, error.message, true);
     }
   });
+
+  setTimeout(ensureOrganizerAccess, 350);
 }
 
 document.addEventListener("DOMContentLoaded", () => {

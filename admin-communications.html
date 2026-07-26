@@ -25,6 +25,7 @@
   <div class="topline">
     <a class="nav-link" href="index.html">Dashboard</a>
     <span>PRCH // Admin communications</span>
+    <button type="button" class="secondary" data-auth-logout>Se deconnecter</button>
   </div>
 
   <section class="hero">
@@ -32,33 +33,17 @@
     <p class="subtitle">Precreez les comptes a rattraper et envoyez les notifications de nouveaute depuis la boite OVH.</p>
   </section>
 
-  <section class="admin-grid">
+  <section class="admin-grid" data-admin-content hidden>
     <section class="panel">
       <h2>Compte sans mot de passe</h2>
       <form class="form-grid" data-user-form>
         <label class="field">
-          <span>Mot de passe admin</span>
-          <input name="adminPassword" type="password" required autocomplete="current-password"/>
-        </label>
-        <label class="field">
           <span>Pseudo reconnaissable</span>
-          <input name="username" required minlength="3" maxlength="60"/>
-        </label>
-        <label class="field">
-          <span>Email</span>
-          <input name="email" type="email" required maxlength="120"/>
-        </label>
-        <label class="field">
-          <span>Telephone</span>
-          <input name="phone" type="tel" maxlength="40"/>
+          <input name="participantUsername" required minlength="3" maxlength="60"/>
         </label>
         <label class="field">
           <span>Chemin de la photo</span>
           <input name="avatar" required placeholder="assets/avatar/...jpg"/>
-        </label>
-        <label class="check-field">
-          <input name="notifyByEmail" type="checkbox" value="true" checked/>
-          <span>Activer les notifications mail pour ce participant</span>
         </label>
         <button type="submit">Precreer le compte</button>
       </form>
@@ -68,10 +53,6 @@
     <section class="panel">
       <h2>Notification globale</h2>
       <form class="form-grid" data-notify-form>
-        <label class="field">
-          <span>Mot de passe admin</span>
-          <input name="adminPassword" type="password" required autocomplete="current-password"/>
-        </label>
         <label class="field">
           <span>Sujet</span>
           <input name="subject" required maxlength="160" value="Nouveaute sur Party Retro Chill Hub"/>
@@ -85,15 +66,19 @@
       <p class="notice" data-notify-notice aria-live="polite"></p>
     </section>
   </section>
+  <p class="notice" data-admin-notice aria-live="polite"></p>
 </main>
 
 <script src="assets/api-config.js"></script>
+<script src="assets/auth.js"></script>
 <script>
 const API_URL = window.PRCH_API_URL || '';
 const userForm = document.querySelector('[data-user-form]');
 const notifyForm = document.querySelector('[data-notify-form]');
 const userNotice = document.querySelector('[data-user-notice]');
 const notifyNotice = document.querySelector('[data-notify-notice]');
+const adminNotice = document.querySelector('[data-admin-notice]');
+const adminContent = document.querySelector('[data-admin-content]');
 
 function setNotice(node, message, isError = false){
   node.textContent = message;
@@ -136,18 +121,45 @@ function apiRequest(action, params = {}){
   });
 }
 
+function sessionParams(){
+  const session = PRCH_AUTH.getSession();
+  return {
+    username: session ? session.username : '',
+    userToken: session ? session.userToken : ''
+  };
+}
+
+async function ensureOrganizerAccess(){
+  const session = PRCH_AUTH.getSession();
+  if(!session){
+    return;
+  }
+  try{
+    const data = await PRCH_AUTH.request('validateUserSession', sessionParams());
+    if(data.username !== 'organisateurs'){
+      setNotice(adminNotice, 'Acces reserve aux organisateurs.', true);
+      return;
+    }
+    adminContent.hidden = false;
+  }catch(error){
+    setNotice(adminNotice, error.message, true);
+  }
+}
+
 userForm.addEventListener('submit', async event => {
   event.preventDefault();
   const button = userForm.querySelector('button[type="submit"]');
   const data = Object.fromEntries(new FormData(userForm).entries());
-  data.notifyByEmail = userForm.querySelector('[name="notifyByEmail"]').checked ? 'true' : 'false';
+  Object.assign(data, sessionParams());
+  data.email = '';
+  data.phone = '';
+  data.notifyByEmail = 'false';
   button.disabled = true;
   setNotice(userNotice, 'Creation du compte...');
   try{
     const result = await apiRequest('adminCreateUser', data);
     setNotice(userNotice, `Compte ${result.username} pret. Le participant creera son mot de passe via mot de passe oublie.`);
     userForm.reset();
-    userForm.querySelector('[name="notifyByEmail"]').checked = true;
   }catch(error){
     setNotice(userNotice, error.message, true);
   }finally{
@@ -159,6 +171,7 @@ notifyForm.addEventListener('submit', async event => {
   event.preventDefault();
   const button = notifyForm.querySelector('button[type="submit"]');
   const data = Object.fromEntries(new FormData(notifyForm).entries());
+  Object.assign(data, sessionParams());
   button.disabled = true;
   setNotice(notifyNotice, 'Envoi des notifications...');
   try{
@@ -169,6 +182,10 @@ notifyForm.addEventListener('submit', async event => {
   }finally{
     button.disabled = false;
   }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(ensureOrganizerAccess, 350);
 });
 </script>
 </body>

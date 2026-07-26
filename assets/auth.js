@@ -2,6 +2,8 @@
   const SESSION_KEY = "prch_user_session_v1";
   const API_URL = window.PRCH_API_URL || "";
   const PUBLIC_PAGES = new Set(["connexion.html", "index.html", "pronostics.html"]);
+  const ADMIN_PAGES = new Set(["admin.html", "admin-communications.html", "admin-escape.html", "admin-missions.html"]);
+  const ORGANIZER_USERNAME = "organisateurs";
 
   function currentPage(){
     const page = window.location.pathname.split("/").pop();
@@ -10,6 +12,10 @@
 
   function isPublicPage(){
     return PUBLIC_PAGES.has(currentPage());
+  }
+
+  function isAdminPage(){
+    return ADMIN_PAGES.has(currentPage());
   }
 
   function getSession(){
@@ -123,6 +129,10 @@
         username: session.username,
         userToken: session.userToken
       });
+      if(isAdminPage() && data.username !== ORGANIZER_USERNAME){
+        window.location.replace("index.html");
+        return;
+      }
       saveSession({ ...session, displayName: data.displayName || session.displayName, avatar: data.avatar || session.avatar });
       showUser(getSession());
     }catch(error){

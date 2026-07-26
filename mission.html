@@ -156,14 +156,33 @@ function renderMessages(messages){
   }).join('');
 }
 
+function getMissionContentUrls(mission){
+  const urls = [];
+  const addUrl = url => {
+    const cleanUrl = String(url || '').trim();
+    if(cleanUrl && !urls.includes(cleanUrl)){
+      urls.push(cleanUrl);
+    }
+  };
+  const localMission = (window.PRCH_MISSIONS || []).find(item => item.id === mission.id);
+  addUrl(localMission && localMission.contentUrl);
+  addUrl(mission.id ? `missions/${mission.id}.html` : '');
+  return urls;
+}
+
 async function loadMissionContent(mission){
-  try{
-    const response = await fetch(mission.contentUrl, { cache: 'no-cache' });
-    if(!response.ok) throw new Error('Contenu indisponible');
-    contentNode.innerHTML = await response.text();
-  }catch(error){
-    contentNode.innerHTML = '<p class="empty">Le contenu de cette mission n est pas encore disponible.</p>';
+  const urls = getMissionContentUrls(mission);
+  for(const url of urls){
+    try{
+      const response = await fetch(url, { cache: 'no-store' });
+      if(!response.ok) throw new Error('Contenu indisponible');
+      contentNode.innerHTML = await response.text();
+      return;
+    }catch(error){
+      console.warn('Contenu mission indisponible', url, error);
+    }
   }
+  contentNode.innerHTML = '<p class="empty">Le contenu de cette mission n est pas encore disponible.</p>';
 }
 
 function renderOrganizerTabs(){

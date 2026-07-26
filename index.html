@@ -77,6 +77,7 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
 .program{width:100%;max-width:860px;margin:.3rem auto 1.2rem;animation:fadeUp .9s ease .45s both}
 .program-title{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:clamp(1.9rem,5vw,3rem);text-align:center;text-transform:uppercase;color:#fff;text-shadow:0 0 18px rgba(255,0,204,.55);letter-spacing:.02em;margin-bottom:.9rem}
 .program-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem}
+.program-actions{display:flex;justify-content:center;margin-top:.9rem}
 .activity{position:relative;min-height:4rem;border:1px solid rgba(0,245,255,.25);background:rgba(0,245,255,.045);display:flex;align-items:center;gap:.8rem;padding:.85rem 1rem;overflow:hidden;box-shadow:0 0 20px rgba(0,245,255,.06)}
 .activity-icon{font-size:1.55rem;line-height:1;filter:drop-shadow(0 0 8px rgba(0,245,255,.55))}
 .activity-name{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:clamp(1.05rem,2.6vw,1.35rem);letter-spacing:.03em;color:#fff;text-shadow:0 0 10px rgba(0,245,255,.35)}
@@ -85,6 +86,29 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
 .activity.is-revealed .activity-veil{display:none}
 .veil-label{font-size:.58rem;letter-spacing:.24em;text-transform:uppercase;color:rgba(0,245,255,.65)}
 .veil-time{font-family:'Orbitron',sans-serif;font-weight:900;font-size:clamp(.95rem,2.4vw,1.25rem);color:var(--yellow);text-shadow:0 0 12px rgba(255,230,0,.65)}
+
+/* BOARDING */
+.boarding{width:100%;max-width:980px;margin:.2rem auto 1.2rem;animation:fadeUp .9s ease .38s both}
+.boarding-title{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:clamp(1.8rem,4.8vw,2.8rem);text-align:center;text-transform:uppercase;color:#fff;text-shadow:0 0 18px rgba(0,245,255,.5);letter-spacing:.02em;margin-bottom:.35rem}
+.boarding-subtitle{text-align:center;font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(232,234,255,.48);margin-bottom:.85rem}
+.boarding-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.75rem}
+.boarding-card{border:1px solid rgba(0,245,255,.2);background:rgba(0,245,255,.04);padding:.8rem;min-height:8rem;box-shadow:0 0 18px rgba(0,245,255,.05)}
+.boarding-card.is-yes{border-color:rgba(0,255,136,.36);background:rgba(0,255,136,.055)}
+.boarding-card.is-maybe{border-color:rgba(255,230,0,.34);background:rgba(255,230,0,.055)}
+.boarding-card.is-no{border-color:rgba(255,0,204,.32);background:rgba(255,0,204,.05)}
+.boarding-card.is-none{border-color:rgba(140,130,255,.26);background:rgba(140,130,255,.045)}
+.boarding-head{display:flex;align-items:baseline;justify-content:space-between;gap:.5rem;margin-bottom:.65rem}
+.boarding-label{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.15rem;line-height:1;text-transform:uppercase;color:#fff;letter-spacing:.04em}
+.boarding-count{font-family:'Orbitron',sans-serif;font-weight:900;font-size:1.3rem;color:var(--cyan);text-shadow:0 0 12px rgba(0,245,255,.55)}
+.boarding-card.is-yes .boarding-count{color:#00ff88;text-shadow:0 0 12px rgba(0,255,136,.55)}
+.boarding-card.is-maybe .boarding-count{color:var(--yellow);text-shadow:0 0 12px rgba(255,230,0,.55)}
+.boarding-card.is-no .boarding-count{color:var(--magenta);text-shadow:0 0 12px rgba(255,0,204,.55)}
+.boarding-avatars{display:flex;flex-wrap:wrap;gap:.35rem;align-items:center}
+.boarding-avatar{width:34px;aspect-ratio:1;border:1px solid rgba(0,245,255,.35);border-radius:999px;object-fit:cover;object-position:center 28%;background:rgba(0,245,255,.08);box-shadow:0 0 10px rgba(0,245,255,.14)}
+.boarding-initials{display:inline-grid;place-items:center;width:34px;aspect-ratio:1;border:1px solid rgba(0,245,255,.35);border-radius:999px;background:rgba(0,245,255,.08);font-family:'Barlow Condensed',sans-serif;font-weight:900;color:var(--yellow);font-size:.95rem}
+.boarding-empty{font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(232,234,255,.38)}
+.boarding-status{margin-top:.65rem;font-size:.58rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(0,245,255,.45);text-align:center}
+.boarding-actions{display:flex;justify-content:center;margin-top:.85rem}
 
 /* ACTIONS */
 .action-panel{width:min(860px,100%);display:grid;grid-template-columns:minmax(0,1.25fr) minmax(260px,.75fr);gap:1rem;align-items:center;margin:1.2rem auto 0;border:1px solid rgba(0,245,255,.2);background:rgba(0,245,255,.035);padding:1rem;box-shadow:0 0 22px rgba(0,245,255,.06)}
@@ -97,7 +121,8 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
 
 .bottom{position:fixed;bottom:0;left:0;width:100%;z-index:50;padding:.55rem 1.5rem;background:rgba(7,5,15,.9);border-top:1px solid rgba(0,245,255,.12);display:flex;align-items:center;justify-content:center;gap:2rem;font-size:.55rem;letter-spacing:.2em;color:rgba(0,245,255,.35);text-transform:uppercase}
 .sep{color:rgba(0,245,255,.15)}
-@media (max-width:640px){.program-grid{grid-template-columns:1fr}.activity{min-height:3.8rem}.action-panel{grid-template-columns:1fr}.organizers-note{text-align:center}}
+@media (max-width:860px){.boarding-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.program-grid,.boarding-grid{grid-template-columns:1fr}.activity{min-height:3.8rem}.action-panel{grid-template-columns:1fr}.organizers-note{text-align:center}}
 
 @keyframes fadeDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
@@ -161,7 +186,7 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
       <div class="disp-col"><div class="disp-col-label">YEAR</div><div class="disp-num">2026</div></div>
     </div>
     <div class="disp-col-label" style="text-align:center;margin-bottom:.2rem">TIME</div>
-    <div class="disp-time">17:30</div>
+    <div class="disp-time">17:15</div>
   </div>
 
   <!-- COUNTDOWN -->
@@ -189,6 +214,47 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
       </div>
     </div>
   </div>
+
+  <div class="div-neon"><div class="div-line"></div><div class="div-diamond"></div><div class="div-line"></div></div>
+
+  <section class="boarding" aria-label="Etat des embarquements">
+    <h2 class="boarding-title">Embarquements</h2>
+    <p class="boarding-subtitle">Etat des reponses pour la soiree</p>
+    <div class="boarding-grid" data-boarding-grid>
+      <article class="boarding-card is-yes" data-boarding-card="yes">
+        <div class="boarding-head">
+          <span class="boarding-label">Confirmes</span>
+          <span class="boarding-count" data-boarding-count>--</span>
+        </div>
+        <div class="boarding-avatars" data-boarding-avatars></div>
+      </article>
+      <article class="boarding-card is-maybe" data-boarding-card="maybe">
+        <div class="boarding-head">
+          <span class="boarding-label">A confirmer</span>
+          <span class="boarding-count" data-boarding-count>--</span>
+        </div>
+        <div class="boarding-avatars" data-boarding-avatars></div>
+      </article>
+      <article class="boarding-card is-no" data-boarding-card="no">
+        <div class="boarding-head">
+          <span class="boarding-label">Absents</span>
+          <span class="boarding-count" data-boarding-count>--</span>
+        </div>
+        <div class="boarding-avatars" data-boarding-avatars></div>
+      </article>
+      <article class="boarding-card is-none" data-boarding-card="none">
+        <div class="boarding-head">
+          <span class="boarding-label">Sans reponse</span>
+          <span class="boarding-count" data-boarding-count>--</span>
+        </div>
+        <div class="boarding-avatars" data-boarding-avatars></div>
+      </article>
+    </div>
+    <p class="boarding-status" data-boarding-status>Synchronisation des embarquements...</p>
+    <div class="boarding-actions">
+      <a class="register-button" href="invitation.html">Indiquer ma participation</a>
+    </div>
+  </section>
 
   <div class="div-neon"><div class="div-line"></div><div class="div-diamond"></div><div class="div-line"></div></div>
 
@@ -258,6 +324,9 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
         </div>
       </article>
     </div>
+    <div class="program-actions">
+      <a class="register-button" href="mission.html">Voir ma mission</a>
+    </div>
   </section>
 
   <div class="div-neon"><div class="div-line"></div><div class="div-diamond"></div><div class="div-line"></div></div>
@@ -284,11 +353,25 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
 <script src="assets/api-config.js"></script>
 <script src="assets/auth.js"></script>
 <script>
-const target = new Date('2026-10-02T17:30:00+02:00').getTime();
+const target = new Date('2026-10-02T17:15:00+02:00').getTime();
 const activityRevealStart = new Date('2026-06-15T10:00:00+02:00').getTime();
 const activityRevealInterval = 7 * 24 * 60 * 60 * 1000;
 const activities = Array.from(document.querySelectorAll('[data-activity]'));
+const boardingCards = Array.from(document.querySelectorAll('[data-boarding-card]'));
+const boardingStatus = document.querySelector('[data-boarding-status]');
+const boardingLabels = {
+  yes: 'confirme',
+  maybe: 'a confirmer',
+  no: 'absent',
+  none: 'sans reponse'
+};
 function pad(n){return String(Math.floor(n)).padStart(2,'0')}
+function escapeHtml(value){
+  return String(value || '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
+}
+function initials(name){
+  return String(name || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase();
+}
 function formatRevealTime(ms){
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
   const days = Math.floor(totalSeconds / 86400);
@@ -338,8 +421,41 @@ function tickActivities(){
     veilTime.textContent = formatRevealTime(revealAt - now);
   });
 }
+function renderBoardingAvatar(participant){
+  const name = participant.displayName || participant.username || 'Participant';
+  const safeName = escapeHtml(name);
+  if(participant.avatar){
+    return `<img class="boarding-avatar" src="${escapeHtml(participant.avatar)}" alt="" title="${safeName}" loading="lazy"/>`;
+  }
+  return `<span class="boarding-initials" title="${safeName}">${escapeHtml(initials(name))}</span>`;
+}
+function renderBoarding(data){
+  const buckets = data.buckets || {};
+  boardingCards.forEach(card => {
+    const status = card.dataset.boardingCard;
+    const participants = Array.isArray(buckets[status]) ? buckets[status] : [];
+    card.querySelector('[data-boarding-count]').textContent = participants.length;
+    card.querySelector('[data-boarding-avatars]').innerHTML = participants.length
+      ? participants.map(renderBoardingAvatar).join('')
+      : `<span class="boarding-empty">Aucun ${boardingLabels[status]}</span>`;
+  });
+  boardingStatus.textContent = 'Embarquements synchronises avec le serveur.';
+}
+async function loadBoarding(){
+  if(!window.PRCH_AUTH){
+    boardingStatus.textContent = 'Serveur indisponible.';
+    return;
+  }
+  try{
+    const data = await PRCH_AUTH.request('invitationBoardGet');
+    renderBoarding(data);
+  }catch(error){
+    boardingStatus.textContent = 'Impossible de synchroniser les embarquements.';
+  }
+}
 tick();
 tickActivities();
+loadBoarding();
 setInterval(tick,1000);
 setInterval(tickActivities,1000);
 </script>

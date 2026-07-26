@@ -14,6 +14,7 @@
   <div class="topline">
     <a class="nav-link" href="escape.html">Dashboard</a>
     <span>Admin escape // Organisateur</span>
+    <button type="button" class="secondary" data-auth-logout>Se deconnecter</button>
   </div>
 
   <section class="hero">
@@ -21,17 +22,7 @@
     <p class="subtitle">Creez les equipes, attribuez les mots de passe et gerez la progression depuis une interface dediee.</p>
   </section>
 
-  <section class="dashboard">
-    <aside class="panel">
-      <h2 class="panel-title">Acces admin</h2>
-      <div class="field">
-        <label for="admin-password">Mot de passe admin</label>
-        <input id="admin-password" data-admin-password type="password" autocomplete="current-password"/>
-      </div>
-      <button type="button" data-admin-login>Charger</button>
-      <p class="notice" data-notice></p>
-    </aside>
-
+  <section class="dashboard" data-admin-content hidden>
     <section>
       <div class="panel">
         <h2 class="panel-title">Nouvelle equipe</h2>
@@ -52,8 +43,10 @@
       </div>
     </section>
   </section>
+  <p class="notice" data-notice></p>
 </main>
 <script src="assets/api-config.js"></script>
+<script src="assets/auth.js"></script>
 <script src="assets/escape.js"></script>
 </body>
 </html>
