@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="assets/escape.css"/>
   <style>
-    .invitation-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,340px);gap:1rem;align-items:start}
+    .invitation-layout{display:block}
     .response-form{display:grid;gap:.85rem}
     .choice-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.55rem}
     .choice-card{display:grid;gap:.25rem;border:1px solid rgba(0,245,255,.22);border-radius:8px;background:rgba(0,245,255,.045);padding:.65rem;cursor:pointer}
@@ -20,9 +20,16 @@
     .choice-help{color:rgba(238,240,255,.6);font-size:.75rem;line-height:1.35}
     textarea{width:100%;min-height:7rem;resize:vertical;border:1px solid rgba(0,245,255,.28);border-radius:6px;background:#080713;color:var(--text);font:inherit;padding:.7rem .75rem;outline:none}
     textarea:focus{border-color:var(--yellow);box-shadow:0 0 0 3px rgba(255,230,0,.12)}
-    .mission-ready{border:1px solid rgba(0,255,136,.35);border-radius:8px;background:rgba(0,255,136,.07);padding:1rem}
-    .mission-ready strong{display:block;font-family:'Barlow Condensed',Impact,sans-serif;font-size:1.7rem;line-height:1;color:#fff;text-transform:uppercase;margin:.25rem 0 .8rem}
-    .mission-waiting{margin-top:1rem;border:1px solid rgba(255,230,0,.28);border-radius:8px;background:rgba(255,230,0,.06);padding:1rem}
+    .mission-reveal{position:relative;overflow:hidden;border:1px solid rgba(0,255,136,.55);border-radius:8px;background:linear-gradient(135deg,rgba(0,255,136,.12),rgba(0,245,255,.1),rgba(255,230,0,.1));padding:1.1rem;margin-top:1rem;box-shadow:0 0 28px rgba(0,255,136,.18)}
+    .mission-reveal[hidden]{display:none}
+    .mission-reveal::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent);animation:mission-scan 1.05s linear infinite}
+    .mission-reveal span,.mission-reveal strong,.mission-reveal p,.mission-reveal .button-row{position:relative}
+    .mission-reveal strong{display:block;font-family:'Barlow Condensed',Impact,sans-serif;font-size:2.4rem;line-height:.95;color:#fff;text-transform:uppercase;margin:.25rem 0 .55rem;text-shadow:0 0 20px rgba(0,245,255,.45)}
+    .mission-reveal p{color:rgba(238,240,255,.82);line-height:1.5;margin:.35rem 0 .8rem}
+    @keyframes mission-scan{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+    .boarding-alert{border:1px solid rgba(255,230,0,.42);border-radius:8px;background:rgba(255,230,0,.075);padding:1rem;color:rgba(238,240,255,.86);line-height:1.55;margin-bottom:1rem}
+    .boarding-alert p{margin:.45rem 0}
+    .boarding-alert strong{color:#fff}
     @media (max-width:760px){.invitation-layout,.choice-grid{grid-template-columns:1fr}}
   </style>
 </head>
@@ -42,10 +49,16 @@
   <section class="invitation-layout">
     <section class="panel">
       <h2>Votre reponse</h2>
+      <div class="boarding-alert">
+        <p>Manifestement, certains passagers ont tente de monter a bord sous une identite... creative.</p>
+        <p>Nous saluons notamment les candidatures de <strong>Guy Canonici</strong> et <strong>Anthony Granger</strong>. Malheureusement, elles n'ont pas passe les controles.</p>
+        <p>Par consequent, la procedure d'inscription a ete modifiee.</p>
+        <p><strong>Meme si vous etiez deja inscrit, vous devez renouveler votre inscription a la soiree.</strong></p>
+      </div>
       <form class="response-form" data-invitation-form>
         <div class="field">
           <label>Presence a la soiree</label>
-          <p class="choice-help">17h15 - 23h</p>
+          <p class="choice-help">2/10 - 17h15 - 23h</p>
           <div class="choice-grid">
             <label class="choice-card">
               <input type="radio" name="partyAttendance" value="yes" required/>
@@ -67,7 +80,7 @@
 
         <div class="field">
           <label>Presence le samedi</label>
-          <p class="choice-help">Predication le matin, repas le midi ensemble, et assemblee generale l'apres-midi.</p>
+          <p class="choice-help">3/10 - Predication le matin, repas le midi ensemble, et assemblee generale l'apres-midi.</p>
           <div class="choice-grid">
             <label class="choice-card">
               <input type="radio" name="saturdayAttendance" value="yes" required/>
@@ -100,23 +113,15 @@
         <button type="submit">Valider ma reponse</button>
       </form>
       <p class="notice" data-notice aria-live="polite"></p>
-    </section>
-
-    <aside class="panel">
-      <h2>Apres validation</h2>
-      <p class="empty" data-mission-locked style="margin-top:1rem">Validez votre reponse pour afficher l'etat de votre mission.</p>
-      <div class="mission-ready" data-mission-box hidden style="margin-top:1rem">
-        <span class="current-team-label">Mission</span>
+      <div class="mission-reveal" data-mission-reveal hidden>
+        <span class="current-team-label">Mission debloquee</span>
         <strong data-mission-title></strong>
-        <a class="button" href="mission.html">Voir ma mission</a>
-      </div>
-      <div class="mission-waiting" data-mission-empty style="margin-top:1rem">
-        <p class="empty">Vous n'avez pas encore de mission assignee.</p>
-        <div class="button-row" style="margin-top:.8rem">
-          <button type="button" class="secondary" data-participation-request>J'aimerais participer</button>
+        <p>Coordonnees validees. Redirection vers votre mission en cours...</p>
+        <div class="button-row">
+          <a class="button" href="mission.html">Ouvrir ma mission maintenant</a>
         </div>
       </div>
-    </aside>
+    </section>
   </section>
 </main>
 <script src="assets/api-config.js"></script>
@@ -124,11 +129,9 @@
 <script>
 const form = document.querySelector('[data-invitation-form]');
 const notice = document.querySelector('[data-notice]');
-const missionBox = document.querySelector('[data-mission-box]');
+const missionReveal = document.querySelector('[data-mission-reveal]');
 const missionTitle = document.querySelector('[data-mission-title]');
-const missionEmpty = document.querySelector('[data-mission-empty]');
-const missionLocked = document.querySelector('[data-mission-locked]');
-const participationButton = document.querySelector('[data-participation-request]');
+let missionRedirectTimer = null;
 
 function setNotice(message, isError = false){
   notice.textContent = message;
@@ -159,21 +162,16 @@ function renderState(data){
     form.comment.value = response.comment || '';
     setNotice('Votre reponse est enregistree. Vous pouvez la modifier si besoin.');
   }
-  if(!response){
-    missionLocked.hidden = false;
-    missionBox.hidden = true;
-    missionEmpty.hidden = true;
-    return;
-  }
-  missionLocked.hidden = true;
-  if(data.mission){
-    missionBox.hidden = false;
-    missionEmpty.hidden = true;
-    missionTitle.textContent = data.mission.title;
-  }else{
-    missionBox.hidden = true;
-    missionEmpty.hidden = false;
-  }
+}
+
+function revealMissionAndRedirect(mission){
+  window.clearTimeout(missionRedirectTimer);
+  missionTitle.textContent = mission.title || 'Mission';
+  missionReveal.hidden = false;
+  missionReveal.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  missionRedirectTimer = window.setTimeout(() => {
+    window.location.href = 'mission.html';
+  }, 1500);
 }
 
 async function loadInvitation(){
@@ -196,30 +194,16 @@ form.addEventListener('submit', async event => {
       comment: data.comment || ''
     });
     renderState(result);
-    setNotice('Reponse enregistree. Merci !');
+    if(result.mission){
+      setNotice('Reponse enregistree. Mission debloquee !');
+      revealMissionAndRedirect(result.mission);
+    }else{
+      setNotice('Reponse enregistree. Merci !');
+    }
   }catch(error){
     setNotice(error.message, true);
   }finally{
     button.disabled = false;
-  }
-});
-
-participationButton.addEventListener('click', async () => {
-  const session = PRCH_AUTH.getSession();
-  const displayName = session ? session.displayName || session.username : 'Un participant';
-  participationButton.disabled = true;
-  setNotice('Message aux organisateurs en cours d envoi...');
-  try{
-    await PRCH_AUTH.request('chatPost', {
-      ...sessionParams(),
-      visibility: 'private',
-      message: `${displayName} aimerait participer a une mission.`
-    });
-    setNotice('Message envoye aux organisateurs.');
-  }catch(error){
-    setNotice(error.message, true);
-  }finally{
-    participationButton.disabled = false;
   }
 });
 

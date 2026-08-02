@@ -16,8 +16,16 @@
     .mission-tabs{display:flex;flex-wrap:wrap;gap:.55rem;margin-bottom:1rem}
     .mission-tabs button{min-height:2.1rem;padding:.45rem .7rem}
     .mission-tabs button.is-active{border-color:var(--green);color:var(--green);background:rgba(0,255,136,.08)}
-    .participant-list{display:flex;flex-wrap:wrap;gap:.45rem}
-    .participant-chip{border:1px solid rgba(0,245,255,.25);border-radius:999px;background:rgba(0,245,255,.05);padding:.28rem .55rem;color:var(--cyan);font:700 .76rem 'Share Tech Mono',Consolas,monospace}
+    .participant-list{display:flex;flex-wrap:wrap;gap:.5rem}
+    .participant-avatar{width:46px;aspect-ratio:1;border:1px solid rgba(0,245,255,.35);border-radius:999px;background:rgba(0,245,255,.08);overflow:hidden;display:grid;place-items:center;color:var(--yellow);font-family:'Barlow Condensed',Impact,sans-serif;font-size:1.25rem;text-transform:uppercase;box-shadow:0 0 18px rgba(0,245,255,.12)}
+    .participant-avatar img{width:100%;height:100%;object-fit:cover;object-position:center 28%;display:block}
+    .mission-assignment{display:grid;grid-template-columns:58px minmax(0,1fr);gap:.8rem;align-items:center;border:1px solid rgba(0,255,136,.44);border-radius:8px;background:rgba(0,255,136,.08);padding:.85rem 1rem;margin:1rem 0 0;box-shadow:0 0 24px rgba(0,255,136,.1)}
+    .mission-assignment[hidden]{display:none}
+    .mission-assignment-avatar{width:58px;aspect-ratio:1;border:1px solid rgba(0,245,255,.35);border-radius:999px;background:rgba(0,245,255,.08);overflow:hidden;display:grid;place-items:center;color:var(--yellow);font-family:'Barlow Condensed',Impact,sans-serif;font-size:1.45rem;text-transform:uppercase}
+    .mission-assignment-avatar img{width:100%;height:100%;object-fit:cover;object-position:center 28%;display:block}
+    .mission-assignment-label{display:block;color:var(--green);font:700 .76rem 'Share Tech Mono',Consolas,monospace;text-transform:uppercase;letter-spacing:.08em}
+    .mission-assignment strong{display:block;font-family:'Barlow Condensed',Impact,sans-serif;font-size:1.8rem;line-height:1;color:#fff;text-transform:uppercase;margin:.2rem 0}
+    .mission-assignment p{margin:0;color:rgba(238,240,255,.74);line-height:1.45}
     .mission-content{color:rgba(238,240,255,.86);line-height:1.6}
     .mission-content h3{font-family:'Barlow Condensed',Impact,sans-serif;font-size:1.8rem;line-height:1;color:#fff;text-transform:uppercase;margin:.4rem 0 .6rem}
     .mission-content ul{padding-left:1.1rem;margin:.6rem 0}
@@ -45,14 +53,22 @@
 
   <section class="hero">
     <h1 data-mission-title>Mission</h1>
-    <p class="subtitle">Votre canal de preparation partage avec votre groupe et les organisateurs.</p>
+    <p class="subtitle">Cette page contient la mission qui vous a ete attribuee, ainsi que le chat partage avec votre groupe et les organisateurs.</p>
+    <div class="mission-assignment" data-mission-assignment hidden>
+      <span class="mission-assignment-avatar" data-assignment-avatar></span>
+      <div>
+        <span class="mission-assignment-label">Mission attribuee a</span>
+        <strong data-assignment-name></strong>
+        <p>Votre role pour la soiree est confirme. Lisez le briefing ci-dessous et utilisez le chat pour coordonner la preparation.</p>
+      </div>
+    </div>
   </section>
 
   <div class="mission-tabs" data-mission-tabs hidden></div>
 
   <section class="mission-layout">
     <section class="panel">
-      <h2>Contenu de la mission</h2>
+      <h2>Votre briefing</h2>
       <div class="participation-card" data-no-mission hidden>
         <strong>Aucune mission affectee</strong>
         <p>Vous pouvez signaler aux organisateurs que vous souhaitez participer a une mission.</p>
@@ -68,7 +84,8 @@
     <aside class="panel">
       <h2>Participants</h2>
       <div class="participant-list" data-participants></div>
-      <h2 style="margin-top:1.2rem">Chat mission</h2>
+      <h2 style="margin-top:1.2rem">Chat mission avec les organisateurs</h2>
+      <p class="empty" style="margin:.25rem 0 .75rem">Echangez ici avec les organisateurs et les autres participants affectes a cette mission.</p>
       <div class="chat-feed" data-chat-feed>
         <p class="empty">Chargement des messages...</p>
       </div>
@@ -101,6 +118,9 @@ const form = document.querySelector('[data-chat-form]');
 const notice = document.querySelector('[data-notice]');
 const noMissionCard = document.querySelector('[data-no-mission]');
 const participationButton = document.querySelector('[data-participation-request]');
+const assignmentCard = document.querySelector('[data-mission-assignment]');
+const assignmentAvatar = document.querySelector('[data-assignment-avatar]');
+const assignmentName = document.querySelector('[data-assignment-name]');
 let currentMission = null;
 
 function escapeHtml(value){
@@ -129,8 +149,27 @@ function sessionParams(){
 
 function renderParticipants(participants){
   participantsNode.innerHTML = participants.length
-    ? participants.map(participant => `<span class="participant-chip">${escapeHtml(participant.displayName)}</span>`).join('')
+    ? participants.map(participant => {
+      const avatar = participant.avatar || '';
+      const name = participant.displayName || participant.username || '';
+      return `<span class="participant-avatar" title="${escapeHtml(name)}" aria-label="${escapeHtml(name)}">${avatar ? `<img src="${escapeHtml(avatar)}" alt="${escapeHtml(name)}"/>` : escapeHtml(initials(name))}</span>`;
+    }).join('')
     : '<p class="empty">Aucun participant affecte.</p>';
+}
+
+function renderAssignmentCard(){
+  const session = PRCH_AUTH.getSession();
+  if(!session || !currentMission){
+    assignmentCard.hidden = true;
+    return;
+  }
+  const name = session.displayName || session.username || 'Vous';
+  const avatar = session.avatar || '';
+  assignmentName.textContent = name;
+  assignmentAvatar.innerHTML = avatar
+    ? `<img src="${escapeHtml(avatar)}" alt="${escapeHtml(name)}"/>`
+    : escapeHtml(initials(name));
+  assignmentCard.hidden = false;
 }
 
 function renderMessages(messages){
@@ -215,6 +254,7 @@ async function loadMission(missionId){
   currentMission = data.mission;
   if(!currentMission){
     titleNode.textContent = 'Mission';
+    assignmentCard.hidden = true;
     noMissionCard.hidden = false;
     contentNode.hidden = true;
     form.hidden = true;
@@ -226,6 +266,7 @@ async function loadMission(missionId){
   contentNode.hidden = false;
   form.hidden = false;
   titleNode.textContent = currentMission.title;
+  renderAssignmentCard();
   renderOrganizerTabs();
   renderParticipants(Array.isArray(data.participants) ? data.participants : []);
   await loadMissionContent(currentMission);

@@ -17,8 +17,12 @@
     .auth-tabs[hidden]{display:none}
     .auth-tabs button{min-height:2.4rem}
     .auth-tabs button.is-active{border-color:var(--green);color:var(--green);background:rgba(0,255,136,.08)}
+    .auth-instructions{border:1px solid rgba(0,245,255,.22);border-radius:8px;background:rgba(0,245,255,.055);padding:.9rem;color:rgba(238,240,255,.78);line-height:1.5}
+    .auth-instructions strong{display:block;font-family:'Barlow Condensed',Impact,sans-serif;font-size:1.55rem;line-height:1;color:#fff;text-transform:uppercase;margin-bottom:.25rem}
+    .auth-step[hidden],.loading-card[hidden]{display:none}
     .auth-form{display:grid;gap:.8rem}
     .auth-form[hidden]{display:none}
+    .auth-form input[readonly]{border-color:rgba(0,255,136,.38);background:rgba(0,255,136,.07);color:rgba(238,240,255,.72);cursor:not-allowed}
     .link-button{justify-self:start;border:0;background:transparent;color:var(--cyan);padding:0;font-family:inherit;text-decoration:underline;text-underline-offset:.18rem;cursor:pointer}
     .link-button:hover{color:var(--green)}
     .auth-note{color:rgba(238,240,255,.7);line-height:1.55}
@@ -33,6 +37,12 @@
     .avatar-choice img{width:100%;height:100%;object-fit:cover;object-position:center 28%;border-radius:6px;display:block}
     .avatar-choice.is-selected{border-color:var(--green);box-shadow:0 0 16px rgba(0,255,136,.24)}
     .avatar-choice.is-selected::after{content:"OK";position:absolute;right:.25rem;bottom:.25rem;border-radius:999px;background:rgba(0,255,136,.92);color:#07100b;font-size:.58rem;font-weight:900;padding:.12rem .28rem}
+    .auth-card.is-loading .avatar-choice{opacity:.38;pointer-events:none}
+    .loading-card{position:relative;overflow:hidden;border:1px solid rgba(0,245,255,.38);border-radius:8px;background:linear-gradient(135deg,rgba(0,245,255,.08),rgba(255,230,0,.06));padding:1rem;color:rgba(238,240,255,.84)}
+    .loading-card::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(0,245,255,.18),transparent);animation:scan 1.2s linear infinite}
+    .loading-card strong{position:relative;display:block;font-family:'Barlow Condensed',Impact,sans-serif;font-size:1.7rem;line-height:1;color:#fff;text-transform:uppercase}
+    .loading-card span{position:relative;display:block;margin-top:.35rem}
+    @keyframes scan{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
     .account-avatar{width:68px;aspect-ratio:1;border:1px solid rgba(0,245,255,.35);border-radius:999px;object-fit:cover;object-position:center 28%;box-shadow:0 0 18px rgba(0,245,255,.16)}
     .identity-card{border:1px solid rgba(0,255,136,.35);border-radius:8px;background:rgba(0,255,136,.07);padding:.8rem;color:rgba(238,240,255,.82);line-height:1.45}
     .identity-card strong{display:block;font-family:'Barlow Condensed',Impact,sans-serif;font-size:1.8rem;line-height:1;color:#fff;text-transform:uppercase}
@@ -48,9 +58,7 @@
 
   <section class="hero">
     <h1>Connexion participant</h1>
-    <p class="subtitle">Connectez-vous avec votre compte pour acceder au site, aux inscriptions et aux epreuves.</p>
-    <p class="subtitle">Si vous avez oublié votre mot de passe, sélectionnez votre tête et <a href="#" class="link-button" data-forgot-link>cliquez ici</a>.</p>
-    <p class="subtitle">En cas de difficulté insurmontable, contactez les organisateurs à l'adresse mail : <a href="mailto:organisateurs@party-retro-chill-hub.com">organisateurs@party-retro-chill-hub.com</a></p>
+    <p class="subtitle">En cas de difficulté de connexion, contactez les organisateurs : <a href="mailto:organisateurs@party-retro-chill-hub.fr">organisateurs@party-retro-chill-hub.fr</a></p>
     <div class="button-row" style="margin-top:1rem">
       <a class="button" href="index.html">Dashboard</a>
     </div>
@@ -58,15 +66,31 @@
 
   <section class="auth-layout" data-auth-layout>
     <section class="panel auth-card" data-auth-card>
-      <div class="field">
-        <label>Qui êtes vous ?</label>
-        <input type="hidden" name="avatar" data-avatar-value required/>
-        <div class="avatar-grid" data-avatar-grid></div>
+      <div class="auth-instructions">
+        <strong data-step-title>Etape 1 - Choisissez votre tete</strong>
+        <span data-step-help>Une fois votre photo selectionnee, le serveur determine si vous devez vous connecter, creer votre compte ou activer un compte precree.</span>
+      </div>
+
+      <div class="auth-step" data-avatar-step>
+        <div class="field">
+          <label>Qui etes-vous ?</label>
+          <input type="hidden" name="avatar" data-avatar-value required/>
+          <div class="avatar-grid" data-avatar-grid></div>
+        </div>
+      </div>
+
+      <div class="loading-card" data-loading-card hidden>
+        <strong>Verification en cours</strong>
+        <span>Connexion au serveur et recuperation de votre profil...</span>
       </div>
 
       <div class="identity-card" data-identity-card hidden>
         <span data-identity-status></span>
         <strong data-identity-name></strong>
+        <div class="button-row" style="margin-top:.55rem">
+          <button type="button" class="link-button" data-forgot-link>Mot de passe oublie ?</button>
+          <button type="button" class="link-button" data-change-avatar>Changer de photo</button>
+        </div>
       </div>
 
       <div class="auth-tabs" role="tablist" aria-label="Mode de connexion" hidden>
@@ -184,10 +208,15 @@ const identityStatus = document.querySelector('[data-identity-status]');
 const identityName = document.querySelector('[data-identity-name]');
 const modeButtons = document.querySelectorAll('[data-auth-mode]');
 const modeTabs = document.querySelector('.auth-tabs');
-const forgotLink = document.querySelector('[data-forgot-link]');
+const forgotLinks = document.querySelectorAll('[data-forgot-link]');
 const backLoginButtons = document.querySelectorAll('[data-back-login]');
+const avatarStep = document.querySelector('[data-avatar-step]');
 const avatarGrid = document.querySelector('[data-avatar-grid]');
 const avatarValue = document.querySelector('[data-avatar-value]');
+const loadingCard = document.querySelector('[data-loading-card]');
+const stepTitle = document.querySelector('[data-step-title]');
+const stepHelp = document.querySelector('[data-step-help]');
+const changeAvatarButton = document.querySelector('[data-change-avatar]');
 const registerUsername = document.getElementById('register-username');
 const pageParams = new URLSearchParams(window.location.search);
 const resetToken = pageParams.get('reset') || '';
@@ -213,6 +242,7 @@ const AVATARS = [
   'assets/avatar/6d51b0d3-445a-45e4-b57d-d4423e0acf3c_576.jpg',
   'assets/avatar/8f0c5aae-83c9-45cd-a1d1-9bddab3cae6e_576.jpg',
   'assets/avatar/9299026e-4225-4fc5-b215-01f628483c00_576.jpg',
+  'assets/avatar/a46697ef-df91-4122-bd56-b3db2adaea45_576.jpg',
   'assets/avatar/a64967cc-4ed1-4faf-90e1-b27747b8d777_576.jpg',
   'assets/avatar/a989e0cf-b982-4fc0-9294-97919f44305e_576.jpg',
   'assets/avatar/ad56707f-054a-4f5b-852e-61e392ccc228_576.jpg',
@@ -221,6 +251,7 @@ const AVATARS = [
   'assets/avatar/bfe608a9-b17c-437d-bd75-6d6e78a82745_576.jpg',
   'assets/avatar/cbf6b03e-d9d1-46e0-a65c-bda42ac7be19_576.jpg',
   'assets/avatar/cc722903-11d6-487e-9f05-13b90d750a13_576.jpg',
+  'assets/avatar/ce308842-a21c-4294-b774-cb0c8d104005_576.jpg',
   'assets/avatar/da1152fe-0e63-48bd-9d1e-95ddeec5b22a_576.jpg',
   'assets/avatar/de2c16da-2acd-40e7-a56a-4af5207637d7_576.jpg',
   'assets/avatar/e38a1997-a1fc-476a-9215-7cf05a37992e_576.jpg',
@@ -257,13 +288,38 @@ function setMode(mode){
   setNotice('');
 }
 
+function setInteractiveDisabled(disabled){
+  authCard.querySelectorAll('button,input,select,textarea').forEach(control => {
+    if(control.dataset.changeAvatar !== undefined){
+      return;
+    }
+    control.disabled = disabled;
+  });
+}
+
+function setLoading(isLoading){
+  authCard.classList.toggle('is-loading', isLoading);
+  authCard.setAttribute('aria-busy', isLoading ? 'true' : 'false');
+  loadingCard.hidden = !isLoading;
+  setInteractiveDisabled(isLoading);
+}
+
 function resetIdentity(){
   selectedIdentity = null;
+  registerUsername.readOnly = false;
+  avatarStep.hidden = false;
+  loadingCard.hidden = true;
   identityCard.hidden = true;
   modeTabs.hidden = true;
   loginForm.hidden = true;
   registerForm.hidden = true;
   forgotForm.hidden = true;
+  resetForm.hidden = true;
+  stepTitle.textContent = 'Etape 1 - Choisissez votre tete';
+  stepHelp.textContent = 'Une fois votre photo selectionnee, le serveur determine si vous devez vous connecter, creer votre compte ou activer un compte precree.';
+  setInteractiveDisabled(false);
+  authCard.classList.remove('is-loading');
+  authCard.removeAttribute('aria-busy');
 }
 
 function showAccountOnly(){
@@ -291,27 +347,44 @@ function selectAvatar(avatar){
 async function resolveAvatar(avatar){
   selectAvatar(avatar);
   resetIdentity();
+  selectAvatar(avatar);
+  setLoading(true);
   setNotice('Verification du profil...');
   try{
     const identity = await PRCH_AUTH.request('userLookupAvatar', { avatar });
     selectedIdentity = identity;
+    avatarStep.hidden = true;
     identityCard.hidden = false;
     if(identity.exists){
       identityStatus.textContent = identity.hasPassword
         ? 'Compte trouve'
-        : `Compte precree. Creez votre mot de passe via le lien oublie${identity.emailHint ? ' envoye a ' + identity.emailHint : ''}.`;
+        : 'Compte precree. Completez vos informations pour activer votre acces.';
       identityName.textContent = identity.displayName || identity.username;
       loginForm.username.value = identity.username;
+      registerForm.username.value = identity.username;
+      registerUsername.readOnly = !identity.hasPassword;
       forgotForm.identifier.value = identity.username;
-      setMode(identity.hasPassword ? 'login' : 'forgot');
+      stepTitle.textContent = identity.hasPassword
+        ? 'Etape 2 - Connectez-vous'
+        : 'Etape 2 - Activez votre compte';
+      stepHelp.textContent = identity.hasPassword
+        ? 'Saisissez votre mot de passe pour ouvrir votre session.'
+        : 'Completez vos informations, puis choisissez un mot de passe pour activer votre compte.';
+      setMode(identity.hasPassword ? 'login' : 'register');
     }else{
       identityStatus.textContent = 'Nouveau profil';
       identityName.textContent = 'Creation du compte';
       registerForm.username.value = '';
+      registerUsername.readOnly = false;
+      stepTitle.textContent = 'Etape 2 - Creez votre compte';
+      stepHelp.textContent = 'Completez vos informations, puis choisissez un mot de passe.';
       setMode('register');
     }
   }catch(error){
+    avatarStep.hidden = false;
     setNotice(error.message, true);
+  }finally{
+    setLoading(false);
   }
 }
 
@@ -424,10 +497,19 @@ modeButtons.forEach(button => {
   button.addEventListener('click', () => setMode(button.dataset.authMode));
 });
 
-forgotLink.addEventListener('click', () => setMode('forgot'));
+forgotLinks.forEach(button => {
+  button.addEventListener('click', () => setMode('forgot'));
+});
 
 backLoginButtons.forEach(button => {
   button.addEventListener('click', () => setMode('login'));
+});
+
+changeAvatarButton.addEventListener('click', () => {
+  avatarValue.value = '';
+  avatarGrid.querySelectorAll('[data-avatar]').forEach(button => button.classList.remove('is-selected'));
+  resetIdentity();
+  setNotice('');
 });
 
 registerUsername.addEventListener('input', () => {
@@ -488,6 +570,10 @@ if(session){
   loadPreferences();
 }else if(resetToken){
   renderAvatars();
+  resetIdentity();
+  avatarStep.hidden = true;
+  stepTitle.textContent = 'Reinitialisation du mot de passe';
+  stepHelp.textContent = 'Choisissez votre nouveau mot de passe pour terminer la reinitialisation.';
   setMode('reset');
 }else{
   renderAvatars();
