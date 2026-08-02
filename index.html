@@ -32,6 +32,8 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
 .topnav{display:flex;align-items:center;justify-content:center;gap:.6rem;flex-wrap:wrap;letter-spacing:.12em}
 .account-link{display:inline-flex;align-items:center;justify-content:center;min-height:1.8rem;border:1px solid rgba(0,245,255,.32);padding:.28rem .65rem;color:rgba(0,245,255,.82);text-decoration:none;background:rgba(0,245,255,.055);box-shadow:0 0 10px rgba(0,245,255,.08);text-shadow:0 0 8px rgba(0,245,255,.35)}
 .account-link:hover,.account-link:focus-visible{border-color:var(--yellow);color:var(--yellow);background:rgba(255,230,0,.065);outline:none}
+.invitation-entry{display:none!important}
+.mission-entry{display:none!important}
 
 .page{position:relative;z-index:10;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:5rem 1.5rem 4rem}
 
@@ -139,7 +141,7 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
   <nav class="topnav" aria-label="Pages utiles">
     <a class="account-link" href="connexion.html">Mon compte</a>
     <a class="account-link" href="pronostics.html">Pronostic</a>
-    <a class="account-link" href="invitation.html">Inscription soiree</a>
+    <a class="account-link invitation-entry" href="invitation.html">Inscription soiree</a>
     <a class="account-link" href="chat.html">Chat</a>
   </nav>
   <span>FLUX : <span style="color:#00ff88">ACTIF</span></span>
@@ -252,7 +254,7 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
     </div>
     <p class="boarding-status" data-boarding-status>Synchronisation des embarquements...</p>
     <div class="boarding-actions">
-      <a class="register-button" href="invitation.html">Indiquer ma participation</a>
+      <a class="register-button invitation-entry" href="invitation.html">Indiquer ma participation</a>
     </div>
   </section>
 
@@ -325,7 +327,7 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
       </article>
     </div>
     <div class="program-actions">
-      <a class="register-button" href="mission.html">Voir ma mission</a>
+      <a class="register-button mission-entry" href="mission.html">Voir ma mission</a>
     </div>
   </section>
 
@@ -334,7 +336,7 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
   <section class="action-panel" aria-label="Actions principales">
     <p class="organizers-note">N'essayez pas de nous identifier, on est méconnaissables et improbables<span>Les organisateurs</span></p>
     <div class="action-buttons">
-      <a class="register-button primary" href="mission.html">Ma mission</a>
+      <a class="register-button primary mission-entry" href="mission.html">Ma mission</a>
       <a class="register-button" href="pronostics.html">Faire un pronostic</a>
       <a class="register-button" href="chat.html">Chat</a>
     </div>
