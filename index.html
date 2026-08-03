@@ -34,6 +34,7 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
 .account-link:hover,.account-link:focus-visible{border-color:var(--yellow);color:var(--yellow);background:rgba(255,230,0,.065);outline:none}
 .invitation-entry{display:none!important}
 .mission-entry{display:none!important}
+.boarding-entry{display:none!important}
 
 .page{position:relative;z-index:10;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:5rem 1.5rem 4rem}
 
@@ -219,7 +220,7 @@ body{background:var(--deep);color:var(--text);font-family:'Share Tech Mono',mono
 
   <div class="div-neon"><div class="div-line"></div><div class="div-diamond"></div><div class="div-line"></div></div>
 
-  <section class="boarding" aria-label="Etat des embarquements">
+  <section class="boarding boarding-entry" aria-label="Etat des embarquements">
     <h2 class="boarding-title">Embarquements</h2>
     <p class="boarding-subtitle">Etat des reponses pour la soiree</p>
     <div class="boarding-grid" data-boarding-grid>
