@@ -20,6 +20,22 @@ body::before{content:"";position:fixed;inset:0;background-image:linear-gradient(
 .hero{padding:1.2rem 0 1.5rem;border-bottom:1px solid rgba(0,245,255,.2);margin-bottom:1.3rem}
 h1{margin:0;font-family:'Barlow Condensed',Impact,sans-serif;font-size:clamp(2.7rem,9vw,6.2rem);line-height:.9;text-transform:uppercase;color:#fff;text-shadow:0 0 22px rgba(255,0,204,.55),0 0 38px rgba(0,245,255,.22)}
 .subtitle{max-width:820px;margin:.85rem 0 0;color:var(--muted);font-size:clamp(.92rem,2vw,1.08rem);line-height:1.55;letter-spacing:.04em}
+.intel-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.8rem;margin:0 0 1rem}
+.intel-card{border:1px solid rgba(0,245,255,.2);border-radius:8px;background:linear-gradient(135deg,rgba(0,245,255,.06),rgba(255,0,204,.04));padding:.85rem;min-height:7.2rem;box-shadow:0 0 20px rgba(0,245,255,.05)}
+.intel-label{display:block;color:rgba(0,245,255,.68);font-size:.62rem;letter-spacing:.16em;text-transform:uppercase}
+.intel-value{display:block;margin:.45rem 0 .2rem;font-family:'Barlow Condensed',Impact,sans-serif;font-size:clamp(1.5rem,3vw,2.15rem);line-height:.95;text-transform:uppercase;color:#fff;text-shadow:0 0 14px rgba(0,245,255,.35)}
+.intel-note{display:block;color:rgba(238,240,255,.58);font-size:.72rem;line-height:1.35}
+.podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.8rem;margin:0 0 1rem}
+.podium-card{position:relative;display:grid;gap:.55rem;justify-items:center;border:1px solid rgba(0,245,255,.2);border-radius:8px;background:rgba(0,245,255,.04);padding:.8rem;text-align:center;min-height:12rem}
+.podium-card.is-first{border-color:rgba(255,230,0,.5);background:rgba(255,230,0,.07);box-shadow:0 0 24px rgba(255,230,0,.12)}
+.podium-rank{position:absolute;top:.45rem;left:.55rem;color:var(--yellow);font:900 1rem 'Orbitron',sans-serif;text-shadow:0 0 10px rgba(255,230,0,.55)}
+.podium-photo{width:88px;aspect-ratio:1;border:1px solid rgba(255,230,0,.35);border-radius:999px;background:rgba(255,230,0,.06);overflow:hidden;display:grid;place-items:center;margin-top:.35rem}
+.podium-card.is-first .podium-photo{width:108px}
+.podium-photo img{width:100%;height:100%;object-fit:cover;object-position:center 28%;display:block}
+.podium-photo span{font-family:'Barlow Condensed',Impact,sans-serif;font-size:2rem;color:var(--yellow)}
+.podium-name{font-family:'Barlow Condensed',Impact,sans-serif;font-size:1.4rem;line-height:1;text-transform:uppercase;color:#fff}
+.podium-votes{color:var(--cyan);font-size:.72rem;text-transform:uppercase}
+.privacy-banner{border:1px solid rgba(0,255,136,.28);border-radius:8px;background:rgba(0,255,136,.055);padding:.8rem;margin-bottom:1rem;color:rgba(238,240,255,.78);line-height:1.45}
 .layout{display:grid;grid-template-columns:minmax(280px,360px) 1fr;gap:1rem;align-items:start}
 .panel{border:1px solid rgba(0,245,255,.22);background:linear-gradient(180deg,rgba(17,16,38,.94),rgba(10,8,21,.95));box-shadow:0 0 24px rgba(0,245,255,.06);border-radius:8px;padding:1rem}
 .panel-title{margin:0 0 .85rem;font-family:'Barlow Condensed',Impact,sans-serif;font-size:1.55rem;text-transform:uppercase;letter-spacing:.04em;color:var(--cyan)}
@@ -45,8 +61,12 @@ button:disabled{cursor:not-allowed;opacity:.45}
 .suspect-role{display:block;margin-top:.25rem;color:rgba(238,240,255,.58);font-size:.75rem;line-height:1.35}
 .vote-count{display:inline-flex;margin-top:.5rem;border:1px solid rgba(0,245,255,.25);border-radius:999px;padding:.22rem .48rem;color:var(--cyan);font-size:.68rem;text-transform:uppercase}
 .suspect-voters{display:block;margin-top:.45rem;color:rgba(238,240,255,.6);font-size:.72rem;line-height:1.35}
+.vote-bar{display:block;position:relative;height:5px;border-radius:999px;background:rgba(0,245,255,.1);overflow:hidden;margin-top:.55rem}
+.vote-bar span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--cyan),var(--magenta));box-shadow:0 0 12px rgba(0,245,255,.35)}
 .empty{color:rgba(238,240,255,.55);line-height:1.45}
+@media (max-width:980px){.intel-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.podium{grid-template-columns:1fr}}
 @media (max-width:880px){.layout{grid-template-columns:1fr}.suspect-grid{grid-template-columns:1fr}}
+@media (max-width:560px){.intel-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -58,8 +78,12 @@ button:disabled{cursor:not-allowed;opacity:.45}
 
   <section class="hero">
     <h1>Qui tire les ficelles ?</h1>
-    <p class="subtitle">Votez pour les deux membres du service que vous soupconnez d'etre les organisateurs. Les pronostics sont visibles par tout le monde.</p>
+    <p class="subtitle">Votez pour les deux membres du service que vous soupconnez d'etre les organisateurs. Le classement est public, mais le detail des votants reste prive.</p>
   </section>
+
+  <section class="intel-grid" aria-label="Tendances des pronostics" data-stats></section>
+  <section class="podium" aria-label="Podium des suspects" data-podium></section>
+  <section class="privacy-banner">Confidentialite active : personne ne voit qui a vote pour qui. Les cartes affichent uniquement les totaux publics et votre propre vote.</section>
 
   <section class="layout">
     <aside class="panel">
@@ -113,6 +137,8 @@ const SUSPECTS = [
 ];
 
 const suspectsNode = document.querySelector('[data-suspects]');
+const statsNode = document.querySelector('[data-stats]');
+const podiumNode = document.querySelector('[data-podium]');
 const submitButton = document.querySelector('[data-submit-vote]');
 const notice = document.querySelector('[data-notice]');
 const voteUser = document.querySelector('[data-vote-user]');
@@ -179,8 +205,16 @@ function apiRequest(action, params = {}){
   });
 }
 
+function sessionParams(){
+  const session = window.PRCH_AUTH ? PRCH_AUTH.getSession() : null;
+  return {
+    username: session ? session.username : '',
+    userToken: session ? session.userToken : ''
+  };
+}
+
 function tally(){
-  const bySuspect = new Map(SUSPECTS.map(suspect => [suspect.id, { ...suspect, count: 0, voters: [] }]));
+  const bySuspect = new Map(SUSPECTS.map(suspect => [suspect.id, { ...suspect, count: 0, selectedByMe: false }]));
   votes.forEach(vote => {
     vote.suspects.forEach(id => {
       const suspect = bySuspect.get(id);
@@ -188,15 +222,104 @@ function tally(){
         return;
       }
       suspect.count += 1;
-      suspect.voters.push(vote.voterName);
+      if(vote.isOwn){
+        suspect.selectedByMe = true;
+      }
     });
   });
   return Array.from(bySuspect.values()).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 }
 
+function suspectById(id){
+  return SUSPECTS.find(suspect => suspect.id === id) || null;
+}
+
+function pairKey(suspects){
+  return [...suspects].sort().join('|');
+}
+
+function pairLabel(key){
+  const names = key.split('|')
+    .map(id => suspectById(id))
+    .filter(Boolean)
+    .map(suspect => suspect.name);
+  return names.length ? names.join(' + ') : 'Aucun binome';
+}
+
+function predictionStats(ranking){
+  const pairs = new Map();
+  votes.forEach(vote => {
+    if(vote.suspects.length !== 2){
+      return;
+    }
+    const key = pairKey(vote.suspects);
+    pairs.set(key, (pairs.get(key) || 0) + 1);
+  });
+  const topPair = Array.from(pairs.entries()).sort((a, b) => b[1] - a[1] || pairLabel(a[0]).localeCompare(pairLabel(b[0])))[0] || null;
+  const leader = ranking[0] || null;
+  const runnerUp = ranking[1] || null;
+  const gap = leader ? leader.count - (runnerUp ? runnerUp.count : 0) : 0;
+  return {
+    leader,
+    topPair,
+    voterCount: votes.length,
+    gap
+  };
+}
+
+function renderStats(ranking){
+  const stats = predictionStats(ranking);
+  const hasLeader = Boolean(stats.leader && stats.leader.count);
+  statsNode.innerHTML = `
+    <article class="intel-card">
+      <span class="intel-label">Suspect n°1</span>
+      <strong class="intel-value">${escapeHtml(hasLeader ? stats.leader.name : 'Aucun')}</strong>
+      <span class="intel-note">${hasLeader ? `${stats.leader.count} vote${stats.leader.count > 1 ? 's' : ''}` : 'En attente du premier vote'}</span>
+    </article>
+    <article class="intel-card">
+      <span class="intel-label">Binome le plus cite</span>
+      <strong class="intel-value">${escapeHtml(stats.topPair ? pairLabel(stats.topPair[0]) : 'Aucun')}</strong>
+      <span class="intel-note">${stats.topPair ? `${stats.topPair[1]} pronostic${stats.topPair[1] > 1 ? 's' : ''}` : 'Pas encore de tendance'}</span>
+    </article>
+    <article class="intel-card">
+      <span class="intel-label">Votants</span>
+      <strong class="intel-value">${stats.voterCount}</strong>
+      <span class="intel-note">pronostic${stats.voterCount > 1 ? 's' : ''} enregistre${stats.voterCount > 1 ? 's' : ''}</span>
+    </article>
+    <article class="intel-card">
+      <span class="intel-label">Ecart</span>
+      <strong class="intel-value">${stats.gap}</strong>
+      <span class="intel-note">${stats.gap > 1 ? 'le leader se detache' : stats.gap === 1 ? 'course serree' : 'egalite ou depart a zero'}</span>
+    </article>
+  `;
+}
+
+function renderPodium(ranking){
+  const top = ranking.filter(suspect => suspect.count > 0).slice(0, 3);
+  if(!top.length){
+    podiumNode.innerHTML = '<article class="panel"><p class="empty">Le podium apparaitra des les premiers pronostics.</p></article>';
+    return;
+  }
+  podiumNode.innerHTML = top.map((suspect, index) => `
+    <article class="podium-card ${index === 0 ? 'is-first' : ''}">
+      <span class="podium-rank">#${index + 1}</span>
+      <span class="podium-photo">
+        <img src="${escapeHtml(suspect.photo)}" alt="${escapeHtml(suspect.name)}" onload="this.nextElementSibling.hidden=true;" onerror="this.remove();"/>
+        <span>${escapeHtml(initials(suspect.name))}</span>
+      </span>
+      <strong class="podium-name">${escapeHtml(suspect.name)}</strong>
+      <span class="podium-votes">${suspect.count} vote${suspect.count > 1 ? 's' : ''}</span>
+    </article>
+  `).join('');
+}
+
 function renderSuspects(){
-  suspectsNode.innerHTML = tally().map(suspect => {
+  const ranking = tally();
+  const maxVotes = Math.max(1, ...ranking.map(suspect => suspect.count));
+  suspectsNode.innerHTML = ranking.map(suspect => {
     const isSelected = selected.has(suspect.id);
+    const votePrivacyLabel = suspect.selectedByMe ? 'Votre vote' : suspect.count ? 'Votants masques' : 'Aucun vote';
+    const progress = Math.round((suspect.count / maxVotes) * 100);
     return `<button type="button" class="suspect-card ${isSelected ? 'is-selected' : ''}" data-suspect="${escapeHtml(suspect.id)}">
       <span class="avatar">
         <img src="${escapeHtml(suspect.photo)}" alt="${escapeHtml(suspect.name)}" onload="this.nextElementSibling.hidden=true;" onerror="this.remove();"/>
@@ -206,10 +329,13 @@ function renderSuspects(){
         <span class="suspect-name">${escapeHtml(suspect.name)}</span>
         <span class="suspect-role">${escapeHtml(suspect.role)}</span>
         <span class="vote-count">${suspect.count} vote${suspect.count > 1 ? 's' : ''}</span>
-        <span class="suspect-voters">${suspect.voters.length ? escapeHtml(suspect.voters.join(', ')) : 'Aucun votant'}</span>
+        <span class="vote-bar" aria-hidden="true"><span style="width:${progress}%"></span></span>
+        <span class="suspect-voters">${votePrivacyLabel}</span>
       </span>
     </button>`;
   }).join('');
+  renderStats(ranking);
+  renderPodium(ranking);
 }
 
 function render(){
@@ -217,7 +343,7 @@ function render(){
   const displayName = userSession ? (userSession.displayName || userSession.username) : '';
   voteUser.textContent = userSession ? displayName : 'Non connecte';
   voteHelp.textContent = userSession
-    ? 'Selectionnez exactement 2 suspects. Votre vote sera enregistre avec votre pseudo.'
+    ? 'Selectionnez exactement 2 suspects. Votre vote est prive : les autres ne verront que les totaux.'
     : 'Connectez-vous avec Mon compte pour voter. Le classement reste visible sans connexion.';
   loginLink.hidden = Boolean(userSession);
   submitButton.hidden = !userSession;
@@ -227,8 +353,13 @@ function render(){
 
 async function refresh(){
   try{
-    const data = await apiRequest('getPredictions');
+    const data = await apiRequest('getPredictions', sessionParams());
     votes = Array.isArray(data.votes) ? data.votes : [];
+    const ownVote = votes.find(vote => vote.isOwn);
+    if(ownVote){
+      selected.clear();
+      ownVote.suspects.forEach(id => selected.add(id));
+    }
     render();
   }catch(error){
     setNotice(error.message, true);
@@ -253,7 +384,6 @@ suspectsNode.addEventListener('click', event => {
 
 submitButton.addEventListener('click', async () => {
   userSession = window.PRCH_AUTH ? PRCH_AUTH.getSession() : null;
-  const name = userSession ? (userSession.displayName || userSession.username) : '';
   const choices = Array.from(selected);
   if(!userSession){
     setNotice('Connectez-vous avec Mon compte avant de voter.', true);
@@ -268,7 +398,7 @@ submitButton.addEventListener('click', async () => {
   setNotice('Transmission du pronostic...');
   try{
     const data = await apiRequest('savePrediction', {
-      voterName: name,
+      ...sessionParams(),
       suspect1: choices[0],
       suspect2: choices[1]
     });

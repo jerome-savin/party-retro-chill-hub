@@ -1,5 +1,5 @@
 const SHEET_REGISTRATIONS = 'Inscriptions';
-const SHEET_PREDICTIONS = 'Pronostics_Organisateurs';
+const SHEET_PREDICTIONS = 'Pronostics_Organisateurs_V2';
 const SHEET_USERS = 'Users';
 const SHEET_CHAT = 'Chat_Messages';
 const SHEET_NOTIFICATIONS = 'Notifications_Log';
@@ -277,12 +277,12 @@ function handleEscapeAction_(params) {
   const action = params.action || 'get';
 
   if (action === 'getPredictions') {
-    return readPredictions_();
+    return readPredictions_(params.username, params.userToken);
   }
 
   if (action === 'savePrediction') {
-    savePrediction_(params.voterName, params.suspect1, params.suspect2);
-    return readPredictions_();
+    savePrediction_(params.username, params.userToken, params.suspect1, params.suspect2);
+    return readPredictions_(params.username, params.userToken);
   }
 
   if (action === 'userRegister') {
@@ -691,14 +691,12 @@ function completeEscapeChallenge_(team, challengeId, fragment) {
   invalidateEscapeCache_();
 }
 
-function savePrediction_(voterName, suspect1, suspect2) {
-  const cleanVoter = String(voterName || '').trim();
+function savePrediction_(username, token, suspect1, suspect2) {
+  const voter = getValidatedUser_(username, token);
+  const cleanVoter = voter.displayName || voter.username;
   const cleanSuspect1 = String(suspect1 || '').trim();
   const cleanSuspect2 = String(suspect2 || '').trim();
 
-  if (!cleanVoter) {
-    throw new Error('Nom du votant requis');
-  }
   if (!cleanSuspect1 || !cleanSuspect2) {
     throw new Error('Deux suspects sont requis');
   }
@@ -706,7 +704,7 @@ function savePrediction_(voterName, suspect1, suspect2) {
     throw new Error('Choisissez deux suspects differents');
   }
 
-  const voterKey = normalizeKey_(cleanVoter);
+  const voterKey = voter.username;
   const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_PREDICTIONS);
   const values = sheet.getDataRange().getValues();
 
@@ -726,17 +724,31 @@ function savePrediction_(voterName, suspect1, suspect2) {
   sheet.appendRow([voterKey, cleanVoter, cleanSuspect1, cleanSuspect2, new Date(), new Date()]);
 }
 
-function readPredictions_() {
+function readPredictions_(username, token) {
+  let viewer = null;
+  if (username && token) {
+    try {
+      viewer = getValidatedUser_(username, token);
+    } catch (error) {
+      viewer = null;
+    }
+  }
+
   const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_PREDICTIONS);
   const rows = sheet.getDataRange().getValues().slice(1);
   return {
     votes: rows
       .filter(row => row[0] && row[1])
-      .map(row => ({
-        voterName: String(row[1] || ''),
-        suspects: [String(row[2] || ''), String(row[3] || '')].filter(Boolean),
-        updatedAt: row[5] instanceof Date ? row[5].toISOString() : String(row[5] || '')
-      }))
+      .map(row => {
+        const voterKey = String(row[0] || '');
+        const isOwn = Boolean(viewer && voterKey === viewer.username);
+        return {
+          voterName: isOwn ? String(row[1] || '') : '',
+          isOwn,
+          suspects: [String(row[2] || ''), String(row[3] || '')].filter(Boolean),
+          updatedAt: row[5] instanceof Date ? row[5].toISOString() : String(row[5] || '')
+        };
+      })
   };
 }
 
