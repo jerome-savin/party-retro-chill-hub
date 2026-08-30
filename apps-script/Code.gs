@@ -6,6 +6,7 @@ const SHEET_NOTIFICATIONS = 'Notifications_Log';
 const SHEET_MISSION_ASSIGNMENTS = 'Mission_Assignments';
 const SHEET_INVITATION_RESPONSES = 'Invitation_Responses';
 const SHEET_TEAMS = 'Escape_Teams';
+const SHEET_ESCAPE_ASSIGNMENTS = 'Escape_Team_Assignments';
 const SHEET_PROGRESS = 'Escape_Progress';
 const DEFAULT_TEAMS = [];
 const CHALLENGE_COUNT = 7;
@@ -376,6 +377,11 @@ function handleEscapeAction_(params) {
     return joinEscapeTeam_(params.team, params.password);
   }
 
+  if (action === 'getMyEscapeTeam') {
+    const user = getValidatedUser_(params.username, params.userToken);
+    return getUserEscapeTeamSession_(user.username);
+  }
+
   if (action === 'validateSession') {
     validateTeamToken_(params.team, params.teamToken);
     return { team: params.team };
@@ -413,6 +419,13 @@ function handleEscapeAction_(params) {
     return readEscapeAdminState_();
   }
 
+  if (action === 'adminSetTeamMembers') {
+    const organizer = getValidatedUser_(params.username, params.userToken);
+    requireOrganizerUser_(organizer);
+    setEscapeTeamMembers_(params.team, params.members);
+    return readEscapeAdminState_();
+  }
+
   if (action === 'adminSetPassword') {
     const organizer = getValidatedUser_(params.username, params.userToken);
     requireOrganizerUser_(organizer);
@@ -441,6 +454,7 @@ function setupEscapeSheets_() {
   const ss = SpreadsheetApp.getActive();
   let teams = ss.getSheetByName(SHEET_TEAMS);
   let progress = ss.getSheetByName(SHEET_PROGRESS);
+  let assignments = ss.getSheetByName(SHEET_ESCAPE_ASSIGNMENTS);
 
   if (!teams) {
     teams = ss.insertSheet(SHEET_TEAMS);
@@ -452,6 +466,11 @@ function setupEscapeSheets_() {
   if (!progress) {
     progress = ss.insertSheet(SHEET_PROGRESS);
     progress.appendRow(['team', 'challengeId', 'fragment', 'completedAt']);
+  }
+
+  if (!assignments) {
+    assignments = ss.insertSheet(SHEET_ESCAPE_ASSIGNMENTS);
+    assignments.appendRow(['userId', 'teamId', 'assignedAt', 'assignedBy', 'active']);
   }
 
   const currentTeams = getEscapeTeamRecords_().map(team => team.name);
@@ -522,9 +541,15 @@ function readEscapeState_() {
 function readEscapeAdminState_() {
   const publicState = readEscapeStateNoCache_();
   const records = getEscapeTeamRecords_();
+  const assignments = getEscapeAssignmentRows_();
+  const participants = listParticipants_().participants;
   return {
+    participants,
     teams: records.map(record => {
       const publicTeam = publicState.teams.find(team => team.name === record.name) || { completed: [], fragments: {} };
+      const memberIds = assignments
+        .filter(assignment => assignment.teamId === record.name && assignment.active)
+        .map(assignment => assignment.userId);
       return {
         name: record.name,
         active: record.active,
@@ -532,7 +557,9 @@ function readEscapeAdminState_() {
         startChallengeId: record.startChallengeId,
         nextChallengeId: getNextChallengeId_(record, publicTeam.completed || []),
         completed: publicTeam.completed,
-        fragments: publicTeam.fragments
+        fragments: publicTeam.fragments,
+        members: memberIds.map(username => participants.find(participant => participant.username === username))
+          .filter(Boolean)
       };
     })
   };
@@ -585,6 +612,20 @@ function getProgressRows_() {
       fragment: String(row[2] || '')
     }))
     .filter(row => row.team && row.challengeId);
+}
+
+function getEscapeAssignmentRows_() {
+  const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_ESCAPE_ASSIGNMENTS);
+  return sheet.getDataRange().getValues().slice(1)
+    .map((row, index) => ({
+      row: index + 2,
+      userId: normalizeUsername_(row[0]),
+      teamId: String(row[1] || '').trim(),
+      assignedAt: row[2],
+      assignedBy: normalizeUsername_(row[3]),
+      active: row[4] === '' ? true : row[4] !== false
+    }))
+    .filter(assignment => assignment.userId && assignment.teamId);
 }
 
 function createEscapeTeam_(name, password, startChallengeId) {
@@ -671,6 +712,28 @@ function findTeamRecord_(team) {
   return record;
 }
 
+function getUserEscapeTeamSession_(username) {
+  const cleanUsername = normalizeUsername_(username);
+  const assignment = getEscapeAssignmentRows_()
+    .find(row => row.userId === cleanUsername && row.active);
+  if (!assignment) {
+    throw new Error('Aucune equipe escape affectee a ce compte');
+  }
+
+  const record = findTeamRecord_(assignment.teamId);
+  if (!record.active) {
+    throw new Error('Equipe desactivee');
+  }
+  if (!record.passwordHash) {
+    throw new Error('Equipe sans mot de passe');
+  }
+
+  return {
+    team: record.name,
+    teamToken: makeTeamToken_(record.name, record.passwordHash)
+  };
+}
+
 function normalizeChallengeId_(value) {
   const id = Number(value);
   if (!id || id < 1 || id > CHALLENGE_COUNT) {
@@ -751,8 +814,51 @@ function resetEscapeTeam_(team) {
 function deleteEscapeTeam_(team) {
   const record = findTeamRecord_(team);
   resetEscapeTeam_(record.name);
+  setEscapeTeamMembers_(record.name, '');
   SpreadsheetApp.getActive().getSheetByName(SHEET_TEAMS).deleteRow(record.row);
   invalidateEscapeCache_();
+}
+
+function setEscapeTeamMembers_(team, members) {
+  const record = findTeamRecord_(team);
+  const requestedMembers = parseMemberList_(members);
+  const validUsers = {};
+  getUserRecords_().forEach(user => {
+    if (user.active) {
+      validUsers[user.username] = true;
+    }
+  });
+
+  requestedMembers.forEach(username => {
+    if (!validUsers[username]) {
+      throw new Error('Participant inconnu: ' + username);
+    }
+  });
+
+  const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_ESCAPE_ASSIGNMENTS);
+  const values = sheet.getDataRange().getValues();
+  for (let row = values.length; row >= 2; row--) {
+    const existingUser = normalizeUsername_(values[row - 1][0]);
+    const existingTeam = String(values[row - 1][1] || '').trim();
+    if (existingTeam === record.name || requestedMembers.includes(existingUser)) {
+      sheet.deleteRow(row);
+    }
+  }
+
+  requestedMembers.forEach(username => {
+    sheet.appendRow([username, record.name, new Date(), ORGANIZER_USERNAME, true]);
+  });
+}
+
+function parseMemberList_(members) {
+  if (Array.isArray(members)) {
+    return members.map(normalizeUsername_).filter(Boolean);
+  }
+  return String(members || '')
+    .split(',')
+    .map(normalizeUsername_)
+    .filter(Boolean)
+    .filter((username, index, all) => all.indexOf(username) === index);
 }
 
 function completeEscapeChallenge_(team, challengeId, fragment) {

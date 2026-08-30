@@ -21,6 +21,7 @@ function defaultState(){
 
 function normalizeState(state){
   const base = state && Array.isArray(state.teams) ? state : defaultState();
+  base.participants = Array.isArray(base.participants) ? base.participants : [];
   base.teams = base.teams.map(team => ({
     name: team.name,
     active: team.active !== false,
@@ -28,7 +29,8 @@ function normalizeState(state){
     completed: Array.isArray(team.completed) ? team.completed.map(Number) : [],
     fragments: team.fragments || {},
     startChallengeId: normalizeChallengeId(team.startChallengeId || 1),
-    nextChallengeId: team.nextChallengeId == null ? null : normalizeChallengeId(team.nextChallengeId)
+    nextChallengeId: team.nextChallengeId == null ? null : normalizeChallengeId(team.nextChallengeId),
+    members: Array.isArray(team.members) ? team.members : []
   }));
   if(!base.selectedTeam || !base.teams.some(team => team.name === base.selectedTeam)){
     base.selectedTeam = base.teams[0] ? base.teams[0].name : "";
@@ -63,6 +65,32 @@ function saveSession(session){
 
 function clearSession(){
   localStorage.removeItem(SESSION_KEY);
+}
+
+async function ensureAssignedSession(){
+  const currentSession = getSession();
+  if(!window.PRCH_AUTH || !API_URL){
+    return currentSession;
+  }
+  const userSession = PRCH_AUTH.getSession();
+  if(!userSession){
+    return currentSession;
+  }
+  try{
+    const data = await apiRequest("getMyEscapeTeam", {
+      username: userSession.username,
+      userToken: userSession.userToken
+    });
+    if(data && data.team && data.teamToken){
+      const session = { team: data.team, teamToken: data.teamToken, assignedAt: Date.now() };
+      saveSession(session);
+      return session;
+    }
+  }catch(error){
+    clearSession();
+    return null;
+  }
+  return currentSession;
 }
 
 let pendingApiRequests = 0;
@@ -281,7 +309,7 @@ function showChallengeAccessPanel(root, title, message, isError = false){
 async function verifyChallengeAccess(root, challengeId){
   setEscapeAccessState("checking");
   showChallengeAccessPanel(root, "Verification d'acces", "Connexion au serveur temporel...");
-  const session = getSession();
+  const session = await ensureAssignedSession();
   if(!session){
     setEscapeAccessState("denied");
     showChallengeAccessPanel(root, "Epreuve verrouillee", "Rejoignez une equipe avant d'acceder au contenu de cette epreuve.", true);
@@ -380,7 +408,12 @@ async function initDashboard(){
     }
   });
   render();
-  refreshState(state).then(nextState => {
+  ensureAssignedSession().then(session => {
+    if(session){
+      state.selectedTeam = session.team;
+    }
+    return refreshState(state);
+  }).then(nextState => {
     state = nextState;
     render();
   }).catch(() => {
@@ -467,7 +500,7 @@ async function initChallengePage(){
   const clue = root.querySelector("[data-default-clue]");
   const fragmentResult = root.querySelector("[data-fragment-result]");
   const fragmentResultText = root.querySelector("[data-fragment-result-text]");
-  const session = getSession();
+  let session = getSession();
 
   if(title){
     title.textContent = challenge.title;
@@ -523,6 +556,7 @@ async function initChallengePage(){
   if(!hasAccess){
     return;
   }
+  session = getSession();
 
   completeButton.addEventListener("click", async () => {
     if(!session){
@@ -592,7 +626,12 @@ async function initFinale(){
     render();
   });
   render();
-  refreshState(state).then(nextState => {
+  ensureAssignedSession().then(session => {
+    if(session){
+      state.selectedTeam = session.team;
+    }
+    return refreshState(state);
+  }).then(nextState => {
     state = nextState;
     render();
   }).catch(() => {});
@@ -651,17 +690,75 @@ async function initAdminPage(){
   }
 
   function render(){
-    list.innerHTML = state.teams.length ? state.teams.map(team => (
-      `<div class="team-pill admin-row">
-        <span>${escapeHtml(team.name)} (${completedCount(team)}/${CHALLENGES.length}) - depart epreuve ${team.startChallengeId || 1}${team.nextChallengeId ? ` - prochaine epreuve ${team.nextChallengeId}` : " - parcours termine"}${team.hasPassword ? "" : " - sans mot de passe"}</span>
-        <span class="admin-actions">
-          <button type="button" class="secondary" data-reset="${escapeHtml(team.name)}">Reset</button>
-          <button type="button" class="secondary" data-password="${escapeHtml(team.name)}">MDP</button>
-          <button type="button" class="secondary" data-start="${escapeHtml(team.name)}" data-start-current="${team.startChallengeId || 1}">Depart</button>
-          <button type="button" class="secondary" data-delete="${escapeHtml(team.name)}">Suppr.</button>
-        </span>
-      </div>`
-    )).join("") : '<p class="empty">Aucune equipe.</p>';
+    const participants = Array.isArray(state.participants) ? state.participants : [];
+    const assignedUsernames = new Set(state.teams.flatMap(team => (team.members || []).map(member => member.username)));
+    const unassigned = participants.filter(participant => !assignedUsernames.has(participant.username));
+    const unassignedBlock = participants.length ? `<article class="admin-team-card">
+      <div class="admin-team-head">
+        <div>
+          <h3 class="admin-team-name">A placer</h3>
+          <div class="admin-team-meta">
+            <span class="admin-chip ${unassigned.length ? "is-warn" : "is-ok"}">${unassigned.length} participant${unassigned.length > 1 ? "s" : ""}</span>
+          </div>
+        </div>
+      </div>
+      <div class="admin-member-list">
+        ${unassigned.length ? unassigned.map(renderMemberBadge).join("") : '<span class="admin-member-empty">Tous les participants actifs sont affectes.</span>'}
+      </div>
+    </article>` : "";
+    list.innerHTML = state.teams.length ? unassignedBlock + state.teams.map(team => {
+      const count = completedCount(team);
+      const isComplete = count === CHALLENGES.length;
+      const nextLabel = team.nextChallengeId ? `Epreuve ${team.nextChallengeId}` : "Parcours termine";
+      const selectedMembers = new Set((team.members || []).map(member => member.username));
+      const steps = CHALLENGES.map(challenge => {
+        const done = isChallengeComplete(team, challenge.id);
+        const isNext = team.nextChallengeId === challenge.id;
+        return `<span class="admin-step ${done ? "is-done" : ""} ${isNext ? "is-next" : ""}" title="${escapeHtml(challenge.title)}">${challenge.id}</span>`;
+      }).join("");
+      const memberOptions = participants.map(participant => (
+        `<option value="${escapeHtml(participant.username)}" ${selectedMembers.has(participant.username) ? "selected" : ""}>${escapeHtml(participant.displayName || participant.username)}</option>`
+      )).join("");
+      return `<article class="admin-team-card ${isComplete ? "is-complete" : ""}">
+        <div class="admin-team-head">
+          <div>
+            <h3 class="admin-team-name">${escapeHtml(team.name)}</h3>
+            <div class="admin-team-meta">
+              <span class="admin-chip ${isComplete ? "is-ok" : "is-warn"}">${count}/${CHALLENGES.length} fragments</span>
+              <span class="admin-chip">Depart ${team.startChallengeId || 1}</span>
+              <span class="admin-chip ${team.nextChallengeId ? "is-warn" : "is-ok"}">${escapeHtml(nextLabel)}</span>
+              <span class="admin-chip ${team.hasPassword ? "is-ok" : "is-danger"}">${team.hasPassword ? "Mot de passe OK" : "Sans mot de passe"}</span>
+            </div>
+          </div>
+        </div>
+        <div class="admin-steps" aria-label="Progression des epreuves">${steps}</div>
+        <div class="admin-members">
+          <div class="admin-members-head">
+            <span>Membres de l'equipe</span>
+            <strong>${selectedMembers.size}</strong>
+          </div>
+          <div class="admin-member-list">
+            ${team.members && team.members.length ? team.members.map(renderMemberBadge).join("") : '<span class="admin-member-empty">Aucun participant affecte.</span>'}
+          </div>
+          <select class="admin-member-picker" multiple data-members-for="${escapeHtml(team.name)}" aria-label="Participants de ${escapeHtml(team.name)}">
+            ${memberOptions}
+          </select>
+        </div>
+        <div class="admin-actions">
+          <button type="button" class="secondary" data-members="${escapeHtml(team.name)}">Enregistrer membres</button>
+          <button type="button" class="secondary" data-reset="${escapeHtml(team.name)}">Reset progression</button>
+          <button type="button" class="secondary" data-password="${escapeHtml(team.name)}">Changer MDP</button>
+          <button type="button" class="secondary" data-start="${escapeHtml(team.name)}" data-start-current="${team.startChallengeId || 1}">Changer depart</button>
+          <button type="button" class="secondary" data-delete="${escapeHtml(team.name)}">Supprimer</button>
+        </div>
+      </article>`;
+    }).join("") : '<p class="empty">Aucune equipe.</p>';
+  }
+
+  function renderMemberBadge(member){
+    const label = member.displayName || member.username;
+    const avatar = member.avatar ? `<img src="${escapeHtml(member.avatar)}" alt=""/>` : "";
+    return `<span class="admin-member">${avatar}<span>${escapeHtml(label)}</span></span>`;
   }
 
   createButton.addEventListener("click", async () => {
@@ -687,8 +784,14 @@ async function initAdminPage(){
     if(!button){
       return;
     }
-    const team = button.dataset.reset || button.dataset.password || button.dataset.start || button.dataset.delete;
+    const team = button.dataset.members || button.dataset.reset || button.dataset.password || button.dataset.start || button.dataset.delete;
     try{
+      if(button.dataset.members){
+        const select = button.closest(".admin-team-card").querySelector("[data-members-for]");
+        const members = Array.from(select.selectedOptions).map(option => option.value).join(",");
+        state = normalizeState(await apiRequest("adminSetTeamMembers", { ...adminSessionParams(), team, members }));
+        setNotice(notice, "Membres de l'equipe mis a jour.");
+      }
       if(button.dataset.reset){
         state = normalizeState(await apiRequest("adminResetTeam", { ...adminSessionParams(), team }));
         setNotice(notice, "Progression remise a zero.");

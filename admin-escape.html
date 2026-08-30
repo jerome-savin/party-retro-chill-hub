@@ -8,6 +8,37 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="assets/escape.css"/>
+  <style>
+    .admin-escape-layout{display:grid;grid-template-columns:minmax(280px,340px) minmax(0,1fr);gap:1rem;align-items:start}
+    .admin-create-panel{position:sticky;top:1rem}
+    .admin-help{margin:.15rem 0 1rem;color:rgba(238,240,255,.62);line-height:1.45}
+    .admin-team-grid{display:grid;gap:.8rem}
+    .admin-team-card{display:grid;gap:.85rem;border:1px solid rgba(0,245,255,.22);border-radius:8px;background:rgba(0,245,255,.045);padding:.9rem}
+    .admin-team-card.is-complete{border-color:rgba(0,255,136,.42);background:rgba(0,255,136,.06)}
+    .admin-team-head{display:flex;align-items:flex-start;justify-content:space-between;gap:.8rem}
+    .admin-team-name{margin:0;font-family:"Barlow Condensed",Impact,sans-serif;font-size:1.7rem;line-height:1;text-transform:uppercase;color:#fff;text-shadow:0 0 12px rgba(0,245,255,.32)}
+    .admin-team-meta{display:flex;flex-wrap:wrap;gap:.4rem}
+    .admin-chip{display:inline-flex;align-items:center;min-height:1.75rem;border:1px solid rgba(0,245,255,.24);border-radius:999px;padding:.25rem .55rem;color:rgba(238,240,255,.8);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase}
+    .admin-chip.is-ok{border-color:rgba(0,255,136,.48);color:var(--green);background:rgba(0,255,136,.06)}
+    .admin-chip.is-warn{border-color:rgba(255,230,0,.44);color:var(--yellow);background:rgba(255,230,0,.06)}
+    .admin-chip.is-danger{border-color:rgba(255,79,109,.5);color:var(--danger);background:rgba(255,79,109,.06)}
+    .admin-steps{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:.28rem}
+    .admin-step{display:grid;place-items:center;min-height:2rem;border:1px solid rgba(255,255,255,.12);border-radius:6px;background:rgba(255,255,255,.035);color:rgba(238,240,255,.48);font-size:.7rem}
+    .admin-step.is-done{border-color:rgba(0,255,136,.42);color:var(--green);background:rgba(0,255,136,.08)}
+    .admin-step.is-next{border-color:rgba(255,230,0,.52);color:var(--yellow);background:rgba(255,230,0,.08);box-shadow:0 0 14px rgba(255,230,0,.12)}
+    .admin-members{display:grid;gap:.55rem;border-top:1px solid rgba(255,255,255,.08);padding-top:.75rem}
+    .admin-members-head{display:flex;align-items:center;justify-content:space-between;gap:.75rem;color:rgba(238,240,255,.72);font-size:.75rem;text-transform:uppercase;letter-spacing:.1em}
+    .admin-member-list{display:flex;flex-wrap:wrap;gap:.35rem}
+    .admin-member{display:inline-flex;align-items:center;gap:.35rem;min-height:1.85rem;border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:.2rem .5rem;background:rgba(255,255,255,.04);color:rgba(238,240,255,.82);font-size:.75rem}
+    .admin-member img{width:1.35rem;height:1.35rem;border-radius:999px;object-fit:cover;object-position:center 28%}
+    .admin-member-empty{color:rgba(238,240,255,.48);font-size:.85rem}
+    .admin-member-picker{min-height:8.5rem;border-radius:8px;background:rgba(5,8,20,.76)}
+    .admin-unassigned{margin-top:1rem}
+    .admin-actions{display:flex;flex-wrap:wrap;gap:.45rem;justify-content:flex-end}
+    .admin-actions button{min-height:2.2rem;padding:.4rem .62rem}
+    .admin-actions button[data-delete]{border-color:rgba(255,79,109,.45);color:var(--danger);background:rgba(255,79,109,.06)}
+    @media (max-width:880px){.admin-escape-layout{grid-template-columns:1fr}.admin-create-panel{position:static}}
+  </style>
 </head>
 <body>
 <main class="shell" data-admin>
@@ -22,10 +53,11 @@
     <p class="subtitle">Creez les equipes, attribuez les mots de passe et gerez la progression depuis une interface dediee.</p>
   </section>
 
-  <section class="dashboard" data-admin-content hidden>
-    <section>
-      <div class="panel">
+  <section class="admin-escape-layout" data-admin-content hidden>
+    <aside>
+      <div class="panel admin-create-panel">
         <h2 class="panel-title">Nouvelle equipe</h2>
+        <p class="admin-help">Definissez une equipe, son mot de passe et son point de depart dans la rotation des epreuves.</p>
         <div class="field">
           <label for="team-name">Nom equipe</label>
           <input id="team-name" data-team-name type="text"/>
@@ -48,10 +80,13 @@
         </div>
         <button type="button" data-admin-create>Creer equipe</button>
       </div>
+    </aside>
 
-      <div class="panel admin-list-panel">
+    <section>
+      <div class="panel">
         <h2 class="panel-title">Equipes</h2>
-        <div class="team-list" data-admin-list></div>
+        <p class="admin-help">Suivez la progression, l'epreuve de depart et la prochaine epreuve accessible pour chaque equipe.</p>
+        <div class="admin-team-grid" data-admin-list></div>
       </div>
     </section>
   </section>
