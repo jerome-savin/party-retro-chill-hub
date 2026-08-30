@@ -2,8 +2,8 @@ const ESCAPE_KEY = "prch_escape_state_v1";
 const SESSION_KEY = "prch_escape_team_session_v1";
 const API_URL = (window.PRCH_API_URL || "").trim();
 const CHALLENGES = [
-  { id: 1, title: "L'acheteur compulsif", clue: "Fragment 01: le point de depart est cache dans la liste." },
-  { id: 2, title: "Le gestionnaire de cataclysme", clue: "Fragment 02: retenez le numero qui revient deux fois." },
+  { id: 1, title: "Négociation sous tension", clue: "Fragment 01: le point de depart est cache dans la liste." },
+  { id: 2, title: "Fournisseur sous couverture", clue: "Fragment 02: retenez le numero qui revient deux fois." },
   { id: 3, title: "Le colis dangereux", clue: "Fragment 03: la couleur dominante indique la piste." },
   { id: 4, title: "Le claquage du stockage", clue: "Fragment 04: cherchez ce qui manque a l'image." },
   { id: 5, title: "L'IA c'est pas tout jeune", clue: "Fragment 05: le refrain donne l'ordre." },
@@ -26,7 +26,9 @@ function normalizeState(state){
     active: team.active !== false,
     hasPassword: Boolean(team.hasPassword),
     completed: Array.isArray(team.completed) ? team.completed.map(Number) : [],
-    fragments: team.fragments || {}
+    fragments: team.fragments || {},
+    startChallengeId: normalizeChallengeId(team.startChallengeId || 1),
+    nextChallengeId: team.nextChallengeId == null ? null : normalizeChallengeId(team.nextChallengeId)
   }));
   if(!base.selectedTeam || !base.teams.some(team => team.name === base.selectedTeam)){
     base.selectedTeam = base.teams[0] ? base.teams[0].name : "";
@@ -175,6 +177,40 @@ function isChallengeComplete(team, id){
   return team.completed.includes(id);
 }
 
+function normalizeChallengeId(value){
+  const id = Number(value);
+  if(!id || id < 1 || id > CHALLENGES.length){
+    return 1;
+  }
+  return Math.floor(id);
+}
+
+function challengeSequence(startChallengeId){
+  const start = normalizeChallengeId(startChallengeId);
+  return CHALLENGES.map((_, offset) => ((start - 1 + offset) % CHALLENGES.length) + 1);
+}
+
+function getNextChallengeId(team){
+  if(team.nextChallengeId === null){
+    return null;
+  }
+  if(team.nextChallengeId){
+    return team.nextChallengeId;
+  }
+  const done = new Set((team.completed || []).map(Number));
+  return challengeSequence(team.startChallengeId).find(id => !done.has(id)) || null;
+}
+
+function getChallengeStatus(team, challenge){
+  const done = isChallengeComplete(team, challenge.id);
+  const next = getNextChallengeId(team);
+  return {
+    done,
+    current: !done && next === challenge.id,
+    accessible: done || next === challenge.id
+  };
+}
+
 function escapeHtml(value){
   return String(value).replace(/[&<>"']/g, char => ({
     "&": "&amp;",
@@ -208,6 +244,78 @@ function setNotice(node, message, isError = false){
   node.classList.toggle("is-error", isError);
 }
 
+function normalizeChallengeAnswer(value){
+  return String(value || "").trim().toUpperCase().replace(/\s+/g, "");
+}
+
+function setEscapeAccessState(state){
+  document.body.classList.remove("escape-access-checking", "escape-access-granted", "escape-access-denied");
+  document.body.classList.add(`escape-access-${state}`);
+}
+
+function showChallengeAccessPanel(root, title, message, isError = false){
+  let panel = root.querySelector("[data-challenge-access-panel]");
+  if(!panel){
+    panel = document.createElement("section");
+    panel.className = "panel challenge-access-panel";
+    panel.dataset.challengeAccessPanel = "";
+    const hero = root.querySelector(".hero");
+    if(hero && hero.nextSibling){
+      root.insertBefore(panel, hero.nextSibling);
+    }else{
+      root.appendChild(panel);
+    }
+  }
+  panel.innerHTML = `
+    <h2 class="panel-title">${escapeHtml(title)}</h2>
+    <p class="challenge-copy">${escapeHtml(message)}</p>
+    <div class="button-row" style="margin-top:1rem">
+      <a class="button" href="escape.html">Retour au dashboard</a>
+      <a class="button secondary" href="rejoindre-equipe.html">Rejoindre une equipe</a>
+    </div>
+  `;
+  panel.querySelector(".challenge-copy").classList.toggle("notice", !isError);
+  panel.querySelector(".challenge-copy").classList.toggle("is-error", isError);
+}
+
+async function verifyChallengeAccess(root, challengeId){
+  setEscapeAccessState("checking");
+  showChallengeAccessPanel(root, "Verification d'acces", "Connexion au serveur temporel...");
+  const session = getSession();
+  if(!session){
+    setEscapeAccessState("denied");
+    showChallengeAccessPanel(root, "Epreuve verrouillee", "Rejoignez une equipe avant d'acceder au contenu de cette epreuve.", true);
+    return false;
+  }
+  if(!API_URL){
+    setEscapeAccessState("denied");
+    showChallengeAccessPanel(root, "Serveur requis", "L'acces aux epreuves doit etre confirme par le serveur.", true);
+    return false;
+  }
+  try{
+    const access = await apiRequest("getChallengeAccess", {
+      team: session.team,
+      teamToken: session.teamToken,
+      challengeId
+    });
+    if(access && access.allowed){
+      setEscapeAccessState("granted");
+      const panel = root.querySelector("[data-challenge-access-panel]");
+      if(panel){
+        panel.remove();
+      }
+      return true;
+    }
+    setEscapeAccessState("denied");
+    showChallengeAccessPanel(root, "Epreuve verrouillee", access && access.reason ? access.reason : "Cette epreuve n'est pas encore accessible pour votre equipe.", true);
+    return false;
+  }catch(error){
+    setEscapeAccessState("denied");
+    showChallengeAccessPanel(root, "Acces impossible", error.message, true);
+    return false;
+  }
+}
+
 async function initDashboard(){
   let state = loadLocalState();
   const root = document.querySelector("[data-dashboard]");
@@ -234,13 +342,23 @@ async function initDashboard(){
       </div>`;
     }).join("") : '<p class="empty">Aucune autre equipe a afficher.</p>';
     challengeGrid.innerHTML = CHALLENGES.map(challenge => {
-      const done = isChallengeComplete(team, challenge.id);
-      return `<a class="challenge-card ${done ? "is-complete" : ""}" href="${challengeUrl(challenge)}">
+      const status = session ? getChallengeStatus(team, challenge) : { done: false, current: false, accessible: false };
+      const classes = [
+        "challenge-card",
+        status.done ? "is-complete" : "",
+        status.current ? "is-current" : "",
+        !status.accessible ? "is-locked" : ""
+      ].filter(Boolean).join(" ");
+      const tag = status.accessible ? "a" : "div";
+      const href = status.accessible ? ` href="${challengeUrl(challenge)}"` : ' aria-disabled="true"';
+      const copy = status.done ? "Fragment collecte." : status.current ? "Epreuve disponible." : "Epreuve verrouillee.";
+      const badge = status.done ? "Validee" : status.current ? "Disponible" : "Verrouillee";
+      return `<${tag} class="${classes}"${href}>
         <span class="challenge-kicker">Epreuve ${String(challenge.id).padStart(2, "0")}</span>
         <h3 class="challenge-title">${challenge.title}</h3>
-        <p class="challenge-copy">${done ? "Fragment collecte." : "Fragment non collecte."}</p>
-        <span class="status-badge">${done ? "Validee" : "A jouer"}</span>
-      </a>`;
+        <p class="challenge-copy">${copy}</p>
+        <span class="status-badge">${badge}</span>
+      </${tag}>`;
     }).join("");
     const unlocked = completedCount(team) === CHALLENGES.length;
     finalPanel.classList.toggle("is-locked", !unlocked);
@@ -336,24 +454,42 @@ async function initChallengePage(){
   let state = loadLocalState();
   const root = document.querySelector("[data-challenge-page]");
   const id = Number(root.dataset.challengeId);
+  const validationMode = root.dataset.validationMode || "manual";
+  const expectedCode = root.dataset.expectedCode || "";
+  const configuredFragment = root.dataset.fragment || "";
   const challenge = CHALLENGES[id - 1];
   const select = root.querySelector("[data-team-select]");
   const note = root.querySelector("[data-fragment-note]");
+  const answer = root.querySelector("[data-challenge-answer]");
   const completeButton = root.querySelector("[data-complete-challenge]");
   const notice = root.querySelector("[data-notice]");
   const title = root.querySelector("[data-challenge-title]");
   const clue = root.querySelector("[data-default-clue]");
+  const fragmentResult = root.querySelector("[data-fragment-result]");
+  const fragmentResultText = root.querySelector("[data-fragment-result-text]");
   const session = getSession();
 
-  title.textContent = challenge.title;
-  clue.textContent = challenge.clue;
+  if(title){
+    title.textContent = challenge.title;
+  }
+  if(clue){
+    clue.textContent = challenge.clue;
+  }
 
   function render(){
     if(!session){
       renderTeamSelect(select, state, true);
       select.disabled = true;
-      note.disabled = true;
+      if(note){
+        note.disabled = true;
+      }
+      if(answer){
+        answer.disabled = true;
+      }
       completeButton.disabled = true;
+      if(fragmentResult){
+        fragmentResult.hidden = true;
+      }
       setNotice(notice, "Rejoignez une equipe avec son mot de passe avant de valider une epreuve.", true);
       return;
     }
@@ -364,17 +500,47 @@ async function initChallengePage(){
     select.value = session.team;
     select.disabled = true;
     const team = getTeam(state, session.team);
-    note.value = team.fragments[id] || "";
-    setNotice(notice, isChallengeComplete(team, id) ? "Epreuve deja validee pour cette equipe." : `Connecte: ${session.team}`);
+    const fragment = team.fragments[id] || "";
+    const isComplete = isChallengeComplete(team, id);
+    if(note){
+      note.value = fragment;
+    }
+    if(answer){
+      answer.disabled = isComplete;
+      if(isComplete){
+        answer.value = "";
+      }
+    }
+    if(fragmentResult && fragmentResultText){
+      fragmentResult.hidden = !fragment;
+      fragmentResultText.textContent = fragment;
+    }
+    completeButton.disabled = isComplete && validationMode === "local-code";
+    setNotice(notice, isComplete ? "Epreuve deja validee pour cette equipe." : `Connecte: ${session.team}`);
+  }
+
+  const hasAccess = await verifyChallengeAccess(root, id);
+  if(!hasAccess){
+    return;
   }
 
   completeButton.addEventListener("click", async () => {
     if(!session){
       return;
     }
-    const fragment = note.value.trim() || CHALLENGES[id - 1].clue;
+    if(validationMode === "local-code" && answer && !answer.value.trim()){
+      setNotice(notice, "Saisissez le code fourni avant de valider.", true);
+      return;
+    }
+    if(validationMode === "local-code" && normalizeChallengeAnswer(answer ? answer.value : "") !== normalizeChallengeAnswer(expectedCode)){
+      setNotice(notice, "Code incorrect. Verifiez le code fourni par votre contact.", true);
+      return;
+    }
     setNotice(notice, "Enregistrement en cours...");
     try{
+      const fragment = validationMode === "local-code"
+        ? configuredFragment || CHALLENGES[id - 1].clue
+        : note && note.value.trim() ? note.value.trim() : CHALLENGES[id - 1].clue;
       const remote = await apiRequest("completeChallenge", {
         team: session.team,
         teamToken: session.teamToken,
@@ -432,12 +598,21 @@ async function initFinale(){
   }).catch(() => {});
 }
 
+async function initStandaloneChallengeGate(selector){
+  const root = document.querySelector(selector);
+  if(!root){
+    return;
+  }
+  await verifyChallengeAccess(root, Number(root.dataset.challengeId));
+}
+
 async function initAdminPage(){
   let state = defaultState();
   const root = document.querySelector("[data-admin]");
   const adminContent = root.querySelector("[data-admin-content]");
   const teamName = root.querySelector("[data-team-name]");
   const teamPassword = root.querySelector("[data-team-password]");
+  const teamStartChallenge = root.querySelector("[data-team-start-challenge]");
   const createButton = root.querySelector("[data-admin-create]");
   const list = root.querySelector("[data-admin-list]");
   const notice = root.querySelector("[data-notice]");
@@ -478,10 +653,11 @@ async function initAdminPage(){
   function render(){
     list.innerHTML = state.teams.length ? state.teams.map(team => (
       `<div class="team-pill admin-row">
-        <span>${escapeHtml(team.name)} (${completedCount(team)}/${CHALLENGES.length})${team.hasPassword ? "" : " - sans mot de passe"}</span>
+        <span>${escapeHtml(team.name)} (${completedCount(team)}/${CHALLENGES.length}) - depart epreuve ${team.startChallengeId || 1}${team.nextChallengeId ? ` - prochaine epreuve ${team.nextChallengeId}` : " - parcours termine"}${team.hasPassword ? "" : " - sans mot de passe"}</span>
         <span class="admin-actions">
           <button type="button" class="secondary" data-reset="${escapeHtml(team.name)}">Reset</button>
           <button type="button" class="secondary" data-password="${escapeHtml(team.name)}">MDP</button>
+          <button type="button" class="secondary" data-start="${escapeHtml(team.name)}" data-start-current="${team.startChallengeId || 1}">Depart</button>
           <button type="button" class="secondary" data-delete="${escapeHtml(team.name)}">Suppr.</button>
         </span>
       </div>`
@@ -494,7 +670,8 @@ async function initAdminPage(){
       state = normalizeState(await apiRequest("adminCreateTeam", {
         ...adminSessionParams(),
         name: teamName.value,
-        password: teamPassword.value
+        password: teamPassword.value,
+        startChallengeId: teamStartChallenge ? teamStartChallenge.value : 1
       }));
       teamName.value = "";
       teamPassword.value = "";
@@ -510,7 +687,7 @@ async function initAdminPage(){
     if(!button){
       return;
     }
-    const team = button.dataset.reset || button.dataset.password || button.dataset.delete;
+    const team = button.dataset.reset || button.dataset.password || button.dataset.start || button.dataset.delete;
     try{
       if(button.dataset.reset){
         state = normalizeState(await apiRequest("adminResetTeam", { ...adminSessionParams(), team }));
@@ -523,6 +700,14 @@ async function initAdminPage(){
         }
         state = normalizeState(await apiRequest("adminSetPassword", { ...adminSessionParams(), team, password: nextPassword }));
         setNotice(notice, "Mot de passe mis a jour.");
+      }
+      if(button.dataset.start){
+        const nextStart = window.prompt(`Epreuve de depart pour ${team} (1 a ${CHALLENGES.length})`, button.dataset.startCurrent || "1");
+        if(!nextStart){
+          return;
+        }
+        state = normalizeState(await apiRequest("adminSetStartChallenge", { ...adminSessionParams(), team, startChallengeId: nextStart }));
+        setNotice(notice, "Epreuve de depart mise a jour.");
       }
       if(button.dataset.delete){
         if(!window.confirm(`Supprimer ${team} et sa progression ?`)){
@@ -544,6 +729,8 @@ document.addEventListener("DOMContentLoaded", () => {
   if(document.querySelector("[data-dashboard]")) initDashboard();
   if(document.querySelector("[data-join-team]")) initJoinPage();
   if(document.querySelector("[data-challenge-page]")) initChallengePage();
+  if(document.querySelector("[data-journal-challenge]")) initStandaloneChallengeGate("[data-journal-challenge]");
+  if(document.querySelector("[data-agent-challenge]")) initStandaloneChallengeGate("[data-agent-challenge]");
   if(document.querySelector("[data-finale]")) initFinale();
   if(document.querySelector("[data-admin]")) initAdminPage();
 });

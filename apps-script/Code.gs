@@ -9,7 +9,7 @@ const SHEET_TEAMS = 'Escape_Teams';
 const SHEET_PROGRESS = 'Escape_Progress';
 const DEFAULT_TEAMS = [];
 const CHALLENGE_COUNT = 7;
-const ESCAPE_STATE_CACHE_KEY = 'escape_public_state_v2';
+const ESCAPE_STATE_CACHE_KEY = 'escape_public_state_v3';
 const ESCAPE_STATE_CACHE_SECONDS = 60;
 const INVITATION_BOARD_CACHE_KEY = 'invitation_board_v1';
 const INVITATION_BOARD_CACHE_SECONDS = 60;
@@ -381,8 +381,14 @@ function handleEscapeAction_(params) {
     return { team: params.team };
   }
 
+  if (action === 'getChallengeAccess') {
+    validateTeamToken_(params.team, params.teamToken);
+    return getChallengeAccess_(params.team, Number(params.challengeId));
+  }
+
   if (action === 'completeChallenge') {
     validateTeamToken_(params.team, params.teamToken);
+    requireChallengeAccess_(params.team, Number(params.challengeId));
     completeEscapeChallenge_(params.team, Number(params.challengeId), params.fragment);
     return readEscapeState_();
   }
@@ -396,7 +402,14 @@ function handleEscapeAction_(params) {
   if (action === 'adminCreateTeam') {
     const organizer = getValidatedUser_(params.username, params.userToken);
     requireOrganizerUser_(organizer);
-    createEscapeTeam_(params.name, params.password);
+    createEscapeTeam_(params.name, params.password, params.startChallengeId);
+    return readEscapeAdminState_();
+  }
+
+  if (action === 'adminSetStartChallenge') {
+    const organizer = getValidatedUser_(params.username, params.userToken);
+    requireOrganizerUser_(organizer);
+    setEscapeTeamStartChallenge_(params.team, params.startChallengeId);
     return readEscapeAdminState_();
   }
 
@@ -431,7 +444,7 @@ function setupEscapeSheets_() {
 
   if (!teams) {
     teams = ss.insertSheet(SHEET_TEAMS);
-    teams.appendRow(['team', 'passwordHash', 'createdAt', 'active']);
+    teams.appendRow(['team', 'passwordHash', 'createdAt', 'active', 'startChallengeId']);
   } else {
     migrateTeamsSheet_(teams);
   }
@@ -444,13 +457,13 @@ function setupEscapeSheets_() {
   const currentTeams = getEscapeTeamRecords_().map(team => team.name);
   DEFAULT_TEAMS.forEach(team => {
     if (!currentTeams.includes(team)) {
-      teams.appendRow([team, '', new Date(), true]);
+      teams.appendRow([team, '', new Date(), true, 1]);
     }
   });
 }
 
 function migrateTeamsSheet_(sheet) {
-  const requiredHeader = ['team', 'passwordHash', 'createdAt', 'active'];
+  const requiredHeader = ['team', 'passwordHash', 'createdAt', 'active', 'startChallengeId'];
   const values = sheet.getDataRange().getValues();
   if (!values.length) {
     sheet.appendRow(requiredHeader);
@@ -473,7 +486,8 @@ function migrateTeamsSheet_(sheet) {
       name,
       existing[1] && String(existing[1]).length > 20 ? existing[1] : '',
       existing[2] || new Date(),
-      existing[3] === '' ? true : existing[3]
+      existing[3] === '' ? true : existing[3],
+      normalizeChallengeId_(existing[4] || 1)
     ]]);
   }
 }
@@ -497,7 +511,8 @@ function readEscapeState_() {
           fragments[row.challengeId] = row.fragment || '';
         }
       });
-      return { name: team.name, completed, fragments };
+      const nextChallengeId = getNextChallengeId_(team, completed);
+      return { name: team.name, completed, fragments, startChallengeId: team.startChallengeId, nextChallengeId };
     })
   };
   CacheService.getScriptCache().put(ESCAPE_STATE_CACHE_KEY, JSON.stringify(state), ESCAPE_STATE_CACHE_SECONDS);
@@ -514,6 +529,8 @@ function readEscapeAdminState_() {
         name: record.name,
         active: record.active,
         hasPassword: Boolean(record.passwordHash),
+        startChallengeId: record.startChallengeId,
+        nextChallengeId: getNextChallengeId_(record, publicTeam.completed || []),
         completed: publicTeam.completed,
         fragments: publicTeam.fragments
       };
@@ -535,7 +552,8 @@ function readEscapeStateNoCache_() {
           fragments[row.challengeId] = row.fragment || '';
         }
       });
-      return { name: team.name, completed, fragments };
+      const nextChallengeId = getNextChallengeId_(team, completed);
+      return { name: team.name, completed, fragments, startChallengeId: team.startChallengeId, nextChallengeId };
     })
   };
 }
@@ -552,7 +570,8 @@ function getEscapeTeamRecords_() {
       name: String(row[0] || '').trim(),
       passwordHash: String(row[1] || '').trim(),
       createdAt: row[2],
-      active: row[3] === '' ? true : row[3] !== false
+      active: row[3] === '' ? true : row[3] !== false,
+      startChallengeId: normalizeChallengeId_(row[4] || 1)
     }))
     .filter(team => team.name);
 }
@@ -568,9 +587,10 @@ function getProgressRows_() {
     .filter(row => row.team && row.challengeId);
 }
 
-function createEscapeTeam_(name, password) {
+function createEscapeTeam_(name, password, startChallengeId) {
   const cleanName = String(name || '').trim();
   const cleanPassword = String(password || '').trim();
+  const cleanStartChallengeId = normalizeChallengeId_(startChallengeId || 1);
   if (!cleanName) {
     throw new Error('Nom d equipe requis');
   }
@@ -583,6 +603,7 @@ function createEscapeTeam_(name, password) {
   if (existing) {
     setEscapeTeamPassword_(existing.name, cleanPassword);
     SpreadsheetApp.getActive().getSheetByName(SHEET_TEAMS).getRange(existing.row, 4).setValue(true);
+    SpreadsheetApp.getActive().getSheetByName(SHEET_TEAMS).getRange(existing.row, 5).setValue(cleanStartChallengeId);
     invalidateEscapeCache_();
     return;
   }
@@ -591,8 +612,15 @@ function createEscapeTeam_(name, password) {
     cleanName,
     hash_(cleanPassword),
     new Date(),
-    true
+    true,
+    cleanStartChallengeId
   ]);
+  invalidateEscapeCache_();
+}
+
+function setEscapeTeamStartChallenge_(team, startChallengeId) {
+  const record = findTeamRecord_(team);
+  SpreadsheetApp.getActive().getSheetByName(SHEET_TEAMS).getRange(record.row, 5).setValue(normalizeChallengeId_(startChallengeId));
   invalidateEscapeCache_();
 }
 
@@ -641,6 +669,67 @@ function findTeamRecord_(team) {
     throw new Error('Equipe inconnue');
   }
   return record;
+}
+
+function normalizeChallengeId_(value) {
+  const id = Number(value);
+  if (!id || id < 1 || id > CHALLENGE_COUNT) {
+    return 1;
+  }
+  return Math.floor(id);
+}
+
+function challengeSequence_(startChallengeId) {
+  const start = normalizeChallengeId_(startChallengeId);
+  const sequence = [];
+  for (let offset = 0; offset < CHALLENGE_COUNT; offset++) {
+    sequence.push(((start - 1 + offset) % CHALLENGE_COUNT) + 1);
+  }
+  return sequence;
+}
+
+function getNextChallengeId_(team, completed) {
+  const done = {};
+  (completed || []).map(Number).forEach(id => {
+    done[id] = true;
+  });
+  return challengeSequence_(team.startChallengeId).find(id => !done[id]) || null;
+}
+
+function isChallengeAccessible_(team, challengeId) {
+  const completed = getProgressRows_()
+    .filter(row => row.team === team.name)
+    .map(row => row.challengeId);
+  return completed.includes(challengeId) || getNextChallengeId_(team, completed) === challengeId;
+}
+
+function getChallengeAccess_(team, challengeId) {
+  if (!challengeId || challengeId < 1 || challengeId > CHALLENGE_COUNT) {
+    throw new Error('Epreuve invalide');
+  }
+  const record = findTeamRecord_(team);
+  const completed = getProgressRows_()
+    .filter(row => row.team === record.name)
+    .map(row => row.challengeId);
+  const nextChallengeId = getNextChallengeId_(record, completed);
+  const alreadyCompleted = completed.includes(challengeId);
+  const allowed = alreadyCompleted || nextChallengeId === challengeId;
+  return {
+    allowed,
+    team: record.name,
+    challengeId,
+    completed: alreadyCompleted,
+    startChallengeId: record.startChallengeId,
+    nextChallengeId,
+    reason: allowed ? '' : 'Cette epreuve n est pas encore accessible pour votre equipe.'
+  };
+}
+
+function requireChallengeAccess_(team, challengeId) {
+  const access = getChallengeAccess_(team, challengeId);
+  if (!access.allowed) {
+    throw new Error(access.reason);
+  }
 }
 
 function resetEscapeTeam_(team) {

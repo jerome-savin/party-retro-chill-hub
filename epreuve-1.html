@@ -10,20 +10,33 @@
   <link rel="stylesheet" href="assets/escape.css"/>
 </head>
 <body>
-<main class="shell" data-challenge-page data-challenge-id="1">
+<main class="shell" data-challenge-page data-challenge-id="1" data-validation-mode="local-code" data-expected-code="DEALOK9400" data-fragment="NEGO">
   <div class="topline"><a class="nav-link" href="escape.html">Dashboard</a><span>Epreuve 01 // Fragment d'indice</span></div>
-  <section class="hero"><h1>Epreuve 01</h1><p class="subtitle">L'acheteur compulsif.</p></section>
+  <section class="hero"><h1>Epreuve 01</h1><p class="subtitle">Négociation sous tension.</p></section>
   <section class="page-layout">
     <article class="brief">
       <span class="challenge-kicker">Mission active</span>
       <h2 data-challenge-title></h2>
-      <p>Ajoutez ici l'enigme, les consignes, les images ou les manipulations necessaires a cette epreuve.</p>
-      <div class="fragment-box"><strong>Fragment par defaut</strong><br/><span data-default-clue></span></div>
+      <p>Toute négociation commence par avoir les bons éléments en main.</p>
+      <p>La vôtre commence au local courrier.</p>
+      <p>Un courrier vous y attend.</p>
+      <p>Destinataire : <strong>Priscille Savin</strong></p>
+      <p>Pour la suite… débrouillez-vous.</p>
+      <div class="fragment-box" data-fragment-result hidden>
+        <strong>Fragment obtenu</strong><br/><span data-fragment-result-text></span>
+        <div class="button-row" style="margin-top:.85rem">
+          <a class="button" href="epreuve-2.html">Aller à l'épreuve 2</a>
+        </div>
+      </div>
     </article>
     <aside class="panel">
       <h2 class="panel-title">Validation</h2>
       <div class="field"><label for="team-select">Equipe</label><select id="team-select" data-team-select></select></div>
-      <div class="field"><label for="fragment-note">Fragment obtenu</label><textarea id="fragment-note" data-fragment-note placeholder="Note, code, mot-cle ou indice collecte"></textarea></div>
+      <div class="field">
+        <label for="challenge-answer">Code fourni</label>
+        <input id="challenge-answer" data-challenge-answer autocomplete="off" placeholder="Saisir le code transmis"/>
+      </div>
+      <textarea id="fragment-note" data-fragment-note hidden></textarea>
       <button type="button" data-complete-challenge>Valider l'epreuve</button>
       <p class="notice" data-notice></p>
     </aside>

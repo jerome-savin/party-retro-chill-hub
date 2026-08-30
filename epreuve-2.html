@@ -8,22 +8,34 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="assets/escape.css"/>
+  <style>
+    .challenge-image{margin-top:.8rem;border:1px solid rgba(0,245,255,.28);border-radius:8px;background:rgba(0,245,255,.04);box-shadow:0 0 28px rgba(0,245,255,.08);overflow:hidden}
+    .challenge-image img{display:block;width:100%;height:auto}
+  </style>
 </head>
 <body>
-<main class="shell" data-challenge-page data-challenge-id="2">
+<main class="shell" data-challenge-page data-challenge-id="2" data-validation-mode="local-code" data-expected-code="31081800001011" data-fragment="GOBAIN">
   <div class="topline"><a class="nav-link" href="escape.html">Dashboard</a><span>Epreuve 02 // Fragment d'indice</span></div>
-  <section class="hero"><h1>Epreuve 02</h1><p class="subtitle">Le gestionnaire de cataclysme.</p></section>
+  <section class="hero"><h1>Epreuve 02</h1><p class="subtitle">Fournisseur sous couverture.</p></section>
   <section class="page-layout">
     <article class="brief">
       <span class="challenge-kicker">Mission active</span>
       <h2 data-challenge-title></h2>
-      <p>Ajoutez ici l'enigme, les consignes, les images ou les manipulations necessaires a cette epreuve.</p>
-      <div class="fragment-box"><strong>Fragment par defaut</strong><br/><span data-default-clue></span></div>
+      <div class="challenge-image">
+        <img src="assets/epreuves/epreuve-2.png" alt="Epreuve 02"/>
+      </div>
+      <div class="fragment-box" data-fragment-result hidden>
+        <strong>Fragment obtenu</strong><br/><span data-fragment-result-text></span>
+        <div class="button-row" style="margin-top:.85rem">
+          <a class="button" href="epreuve-3.html">Aller à l'épreuve 3</a>
+        </div>
+      </div>
     </article>
     <aside class="panel">
       <h2 class="panel-title">Validation</h2>
       <div class="field"><label for="team-select">Equipe</label><select id="team-select" data-team-select></select></div>
-      <div class="field"><label for="fragment-note">Fragment obtenu</label><textarea id="fragment-note" data-fragment-note placeholder="Note, code, mot-cle ou indice collecte"></textarea></div>
+      <div class="field"><label for="challenge-answer">Réponse</label><textarea id="challenge-answer" data-challenge-answer placeholder="Saisir votre réponse"></textarea></div>
+      <textarea id="fragment-note" data-fragment-note hidden></textarea>
       <button type="button" data-complete-challenge>Valider l'epreuve</button>
       <p class="notice" data-notice></p>
     </aside>
