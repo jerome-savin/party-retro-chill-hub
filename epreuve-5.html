@@ -10,20 +10,35 @@
   <link rel="stylesheet" href="assets/escape.css"/>
 </head>
 <body>
-<main class="shell" data-challenge-page data-challenge-id="5">
+<main class="shell" data-challenge-page data-challenge-id="5" data-validation-mode="local-code" data-expected-code="Interloqué d’achat" data-fragment="LAMAISONDESFOUS">
   <div class="topline"><a class="nav-link" href="escape.html">Dashboard</a><span>Epreuve 05 // Fragment d'indice</span></div>
-  <section class="hero"><h1>Epreuve 05</h1><p class="subtitle">L'IA c'est pas tout jeune.</p></section>
+  <section class="hero"><h1>Epreuve 05</h1><p class="subtitle">L'interlocuteur achats entre dans la boucle.</p></section>
   <section class="page-layout">
     <article class="brief">
       <span class="challenge-kicker">Mission active</span>
       <h2 data-challenge-title></h2>
-      <p>Ajoutez ici l'enigme, les consignes, les images ou les manipulations necessaires a cette epreuve.</p>
-      <div class="fragment-box"><strong>Fragment par defaut</strong><br/><span data-default-clue></span></div>
+      <p>Le role d'interlocuteur achats n'est pas toujours une promenade de sante.</p>
+      <p>Obtenir une information peut parfois ressembler a une visite de la maison des fous d'Asterix : formulaires invisibles, interlocuteurs improbables et logique administrative venue d'une autre dimension.</p>
+      <p>Heureusement, un interlocuteur achats n'est jamais totalement seul. Son meilleur ami dans l'adversite, c'est souvent le referent approvisionnement.</p>
+      <div class="fragment-box">
+        <strong>Point de depart</strong><br/>
+        Quel referent approvisionnement fait partie des participants au jeu ? Une fois identifie, allez a son bureau pour discuter avec lui.
+      </div>
+      <div class="fragment-box" data-fragment-result hidden>
+        <strong>Fragment obtenu</strong><br/><span data-fragment-result-text></span>
+        <div class="button-row" style="margin-top:.85rem">
+          <a class="button" href="6-journaux.html">Aller à l'épreuve 6</a>
+        </div>
+      </div>
     </article>
     <aside class="panel">
       <h2 class="panel-title">Validation</h2>
       <div class="field"><label for="team-select">Equipe</label><select id="team-select" data-team-select></select></div>
-      <div class="field"><label for="fragment-note">Fragment obtenu</label><textarea id="fragment-note" data-fragment-note placeholder="Note, code, mot-cle ou indice collecte"></textarea></div>
+      <div class="field">
+        <label for="challenge-answer">Mot de passe</label>
+        <input id="challenge-answer" data-challenge-answer autocomplete="off" placeholder="Saisir le mot de passe"/>
+      </div>
+      <textarea id="fragment-note" data-fragment-note hidden></textarea>
       <button type="button" data-complete-challenge>Valider l'epreuve</button>
       <p class="notice" data-notice></p>
     </aside>

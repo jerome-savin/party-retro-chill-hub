@@ -392,6 +392,12 @@ function handleEscapeAction_(params) {
     return getChallengeAccess_(params.team, Number(params.challengeId));
   }
 
+  if (action === 'getOrganizerChallengeAccess') {
+    const organizer = getValidatedUser_(params.username, params.userToken);
+    requireOrganizerUser_(organizer);
+    return getOrganizerChallengeAccess_(Number(params.challengeId));
+  }
+
   if (action === 'completeChallenge') {
     validateTeamToken_(params.team, params.teamToken);
     requireChallengeAccess_(params.team, Number(params.challengeId));
@@ -785,6 +791,18 @@ function getChallengeAccess_(team, challengeId) {
     startChallengeId: record.startChallengeId,
     nextChallengeId,
     reason: allowed ? '' : 'Cette epreuve n est pas encore accessible pour votre equipe.'
+  };
+}
+
+function getOrganizerChallengeAccess_(challengeId) {
+  if (!challengeId || challengeId < 1 || challengeId > CHALLENGE_COUNT) {
+    throw new Error('Epreuve invalide');
+  }
+  return {
+    allowed: true,
+    organizer: true,
+    challengeId,
+    reason: ''
   };
 }
 

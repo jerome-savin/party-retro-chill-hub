@@ -1,6 +1,7 @@
 const ESCAPE_KEY = "prch_escape_state_v1";
 const SESSION_KEY = "prch_escape_team_session_v1";
 const API_URL = (window.PRCH_API_URL || "").trim();
+const ORGANIZER_USERNAME = "organisateurs";
 const CHALLENGES = [
   { id: 1, title: "Négociation sous tension", clue: "Fragment 01: le point de depart est cache dans la liste." },
   { id: 2, title: "Fournisseur sous couverture", clue: "Fragment 02: retenez le numero qui revient deux fois." },
@@ -91,6 +92,14 @@ async function ensureAssignedSession(){
     return null;
   }
   return currentSession;
+}
+
+function getUserSession(){
+  return window.PRCH_AUTH ? PRCH_AUTH.getSession() : null;
+}
+
+function isOrganizerSession(session = getUserSession()){
+  return Boolean(session && session.username === ORGANIZER_USERNAME && session.userToken);
 }
 
 let pendingApiRequests = 0;
@@ -309,6 +318,33 @@ function showChallengeAccessPanel(root, title, message, isError = false){
 async function verifyChallengeAccess(root, challengeId){
   setEscapeAccessState("checking");
   showChallengeAccessPanel(root, "Verification d'acces", "Connexion au serveur temporel...");
+  const userSession = getUserSession();
+  if(isOrganizerSession(userSession)){
+    if(!API_URL){
+      setEscapeAccessState("denied");
+      showChallengeAccessPanel(root, "Serveur requis", "L'acces organisateur doit etre confirme par le serveur.", true);
+      return false;
+    }
+    try{
+      const access = await apiRequest("getOrganizerChallengeAccess", {
+        username: userSession.username,
+        userToken: userSession.userToken,
+        challengeId
+      });
+      if(access && access.allowed){
+        setEscapeAccessState("granted");
+        const panel = root.querySelector("[data-challenge-access-panel]");
+        if(panel){
+          panel.remove();
+        }
+        return true;
+      }
+    }catch(error){
+      setEscapeAccessState("denied");
+      showChallengeAccessPanel(root, "Acces organisateur impossible", error.message, true);
+      return false;
+    }
+  }
   const session = await ensureAssignedSession();
   if(!session){
     setEscapeAccessState("denied");
@@ -510,6 +546,23 @@ async function initChallengePage(){
   }
 
   function render(){
+    if(isOrganizerSession()){
+      renderTeamSelect(select, state, true);
+      select.disabled = true;
+      if(note){
+        note.disabled = true;
+      }
+      if(answer){
+        answer.disabled = true;
+      }
+      completeButton.disabled = true;
+      if(fragmentResult){
+        fragmentResult.hidden = true;
+      }
+      setNotice(notice, "Mode organisateurs: acces autorise en consultation.");
+      return;
+    }
+
     if(!session){
       renderTeamSelect(select, state, true);
       select.disabled = true;
