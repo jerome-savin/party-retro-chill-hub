@@ -307,7 +307,7 @@ function showChallengeAccessPanel(root, title, message, isError = false){
     <h2 class="panel-title">${escapeHtml(title)}</h2>
     <p class="challenge-copy">${escapeHtml(message)}</p>
     <div class="button-row" style="margin-top:1rem">
-      <a class="button" href="escape.html">Retour au dashboard</a>
+      <a class="button" href="3scap3.html">Retour au dashboard</a>
       <a class="button secondary" href="rejoindre-equipe.html">Rejoindre une equipe</a>
     </div>
   `;

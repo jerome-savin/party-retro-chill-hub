@@ -8,6 +8,7 @@ const SHEET_INVITATION_RESPONSES = 'Invitation_Responses';
 const SHEET_TEAMS = 'Escape_Teams';
 const SHEET_ESCAPE_ASSIGNMENTS = 'Escape_Team_Assignments';
 const SHEET_PROGRESS = 'Escape_Progress';
+const SHEET_FINAL_CHRONOS = 'Chronos_Finale';
 const DEFAULT_TEAMS = [];
 const CHALLENGE_COUNT = 7;
 const ESCAPE_STATE_CACHE_KEY = 'escape_public_state_v3';
@@ -405,6 +406,18 @@ function handleEscapeAction_(params) {
     return readEscapeState_();
   }
 
+  if (action === 'finalChronoGet') {
+    return readFinalChronoState_();
+  }
+
+  if (action === 'finalChronoStart') {
+    return startFinalChronos_();
+  }
+
+  if (action === 'finalChronoStop') {
+    return stopFinalChrono_(params.team);
+  }
+
   if (action === 'adminList') {
     const organizer = getValidatedUser_(params.username, params.userToken);
     requireOrganizerUser_(organizer);
@@ -461,6 +474,7 @@ function setupEscapeSheets_() {
   let teams = ss.getSheetByName(SHEET_TEAMS);
   let progress = ss.getSheetByName(SHEET_PROGRESS);
   let assignments = ss.getSheetByName(SHEET_ESCAPE_ASSIGNMENTS);
+  let finalChronos = ss.getSheetByName(SHEET_FINAL_CHRONOS);
 
   if (!teams) {
     teams = ss.insertSheet(SHEET_TEAMS);
@@ -477,6 +491,11 @@ function setupEscapeSheets_() {
   if (!assignments) {
     assignments = ss.insertSheet(SHEET_ESCAPE_ASSIGNMENTS);
     assignments.appendRow(['userId', 'teamId', 'assignedAt', 'assignedBy', 'active']);
+  }
+
+  if (!finalChronos) {
+    finalChronos = ss.insertSheet(SHEET_FINAL_CHRONOS);
+    finalChronos.appendRow(['team', 'bonusMalusSeconds', 'chronoClos', 'timestampCloture', 'tempsFinalMs', 'startedAt', 'updatedAt']);
   }
 
   const currentTeams = getEscapeTeamRecords_().map(team => team.name);
@@ -547,12 +566,20 @@ function readEscapeState_() {
 function readEscapeAdminState_() {
   const publicState = readEscapeStateNoCache_();
   const records = getEscapeTeamRecords_();
+  const progressRows = getProgressRows_();
   const assignments = getEscapeAssignmentRows_();
   const participants = listParticipants_().participants;
   return {
     participants,
     teams: records.map(record => {
       const publicTeam = publicState.teams.find(team => team.name === record.name) || { completed: [], fragments: {} };
+      const progress = progressRows
+        .filter(row => row.team === record.name)
+        .map(row => ({
+          challengeId: row.challengeId,
+          fragment: row.fragment || '',
+          completedAt: serializeDate_(row.completedAt)
+        }));
       const memberIds = assignments
         .filter(assignment => assignment.teamId === record.name && assignment.active)
         .map(assignment => assignment.userId);
@@ -560,10 +587,12 @@ function readEscapeAdminState_() {
         name: record.name,
         active: record.active,
         hasPassword: Boolean(record.passwordHash),
+        createdAt: serializeDate_(record.createdAt),
         startChallengeId: record.startChallengeId,
         nextChallengeId: getNextChallengeId_(record, publicTeam.completed || []),
         completed: publicTeam.completed,
         fragments: publicTeam.fragments,
+        progress,
         members: memberIds.map(username => participants.find(participant => participant.username === username))
           .filter(Boolean)
       };
@@ -615,9 +644,25 @@ function getProgressRows_() {
     .map(row => ({
       team: String(row[0] || '').trim(),
       challengeId: Number(row[1]),
-      fragment: String(row[2] || '')
+      fragment: String(row[2] || ''),
+      completedAt: row[3]
     }))
     .filter(row => row.team && row.challengeId);
+}
+
+function serializeDate_(value) {
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  return String(value || '');
+}
+
+function toDate_(value) {
+  if (value instanceof Date) {
+    return value;
+  }
+  const date = new Date(value);
+  return isNaN(date.getTime()) ? null : date;
 }
 
 function getEscapeAssignmentRows_() {
@@ -632,6 +677,108 @@ function getEscapeAssignmentRows_() {
       active: row[4] === '' ? true : row[4] !== false
     }))
     .filter(assignment => assignment.userId && assignment.teamId);
+}
+
+function readFinalChronoState_() {
+  syncFinalChronoRows_();
+  const rows = getFinalChronoRows_();
+  const teams = getEscapeTeamRecords_().filter(team => team.active);
+  const startedRow = rows.find(row => row.startedAt);
+  const startedAt = startedRow ? startedRow.startedAt : '';
+  return {
+    serverNow: new Date().toISOString(),
+    startedAt: serializeDate_(startedAt),
+    teams: teams.map(team => {
+      const chrono = rows.find(row => row.team === team.name) || {};
+      return {
+        team: team.name,
+        color: inferTeamColor_(team.name),
+        bonusMalusSeconds: Number(chrono.bonusMalusSeconds || 0),
+        chronoClos: chrono.chronoClos === true,
+        timestampCloture: serializeDate_(chrono.timestampCloture),
+        tempsFinalMs: Number(chrono.tempsFinalMs || 0)
+      };
+    })
+  };
+}
+
+function startFinalChronos_() {
+  syncFinalChronoRows_();
+  const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_FINAL_CHRONOS);
+  const rows = getFinalChronoRows_();
+  const existingStart = rows.find(row => row.startedAt);
+  const start = existingStart ? toDate_(existingStart.startedAt) || new Date() : new Date();
+  rows.forEach(row => {
+    sheet.getRange(row.row, 6, 1, 2).setValues([[start, new Date()]]);
+  });
+  return readFinalChronoState_();
+}
+
+function stopFinalChrono_(team) {
+  syncFinalChronoRows_();
+  const cleanTeam = String(team || '').trim();
+  if (!cleanTeam) {
+    throw new Error('Equipe requise');
+  }
+  const rows = getFinalChronoRows_();
+  const row = rows.find(item => item.team === cleanTeam);
+  if (!row) {
+    throw new Error('Equipe inconnue');
+  }
+  const startedAt = toDate_(row.startedAt);
+  if (!startedAt) {
+    throw new Error('Les chronos ne sont pas encore demarres');
+  }
+  if (row.chronoClos === true && row.tempsFinalMs) {
+    return readFinalChronoState_();
+  }
+
+  const now = new Date();
+  const elapsedMs = now.getTime() - startedAt.getTime() + (Number(row.bonusMalusSeconds || 0) * 1000);
+  const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_FINAL_CHRONOS);
+  sheet.getRange(row.row, 3, 1, 5).setValues([[true, now, Math.max(0, elapsedMs), startedAt, now]]);
+  return readFinalChronoState_();
+}
+
+function syncFinalChronoRows_() {
+  const ss = SpreadsheetApp.getActive();
+  const sheet = ss.getSheetByName(SHEET_FINAL_CHRONOS);
+  const rows = getFinalChronoRows_();
+  const existingTeams = rows.map(row => row.team);
+  getEscapeTeamRecords_()
+    .filter(team => team.active)
+    .forEach(team => {
+      if (!existingTeams.includes(team.name)) {
+        sheet.appendRow([team.name, 0, false, '', '', '', new Date()]);
+      }
+    });
+}
+
+function getFinalChronoRows_() {
+  const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_FINAL_CHRONOS);
+  return sheet.getDataRange().getValues().slice(1)
+    .map((row, index) => ({
+      row: index + 2,
+      team: String(row[0] || '').trim(),
+      bonusMalusSeconds: Number(row[1] || 0),
+      chronoClos: row[2] === true || String(row[2]).toUpperCase() === 'TRUE',
+      timestampCloture: row[3],
+      tempsFinalMs: Number(row[4] || 0),
+      startedAt: row[5],
+      updatedAt: row[6]
+    }))
+    .filter(row => row.team);
+}
+
+function inferTeamColor_(teamName) {
+  const name = String(teamName || '').toLowerCase();
+  if (name.indexOf('🔵') !== -1 || name.indexOf('bleu') !== -1) return 'bleu';
+  if (name.indexOf('🔴') !== -1 || name.indexOf('rouge') !== -1) return 'rouge';
+  if (name.indexOf('🟢') !== -1 || name.indexOf('vert') !== -1) return 'vert';
+  if (name.indexOf('🟣') !== -1 || name.indexOf('violet') !== -1) return 'violet';
+  if (name.indexOf('🟠') !== -1 || name.indexOf('orange') !== -1) return 'orange';
+  if (name.indexOf('🟡') !== -1 || name.indexOf('jaune') !== -1) return 'jaune';
+  return 'bleu';
 }
 
 function createEscapeTeam_(name, password, startChallengeId) {

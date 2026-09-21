@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Avancement equipes - Party Retro Chill Hub</title>
+  <link rel="icon" type="image/png" href="assets/favicons/favicon-prch.png"/>
+  <link rel="manifest" href="manifest.webmanifest"/>
+  <meta name="theme-color" content="#00f5ff"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="assets/escape.css"/>
+  <style>
+    .summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.8rem;margin-bottom:1rem}
+    .summary-card{border:1px solid rgba(0,245,255,.22);border-radius:8px;background:rgba(0,245,255,.045);padding:.9rem}
+    .summary-label{display:block;color:rgba(0,245,255,.72);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase}
+    .summary-value{display:block;margin-top:.3rem;font-family:"Barlow Condensed",Impact,sans-serif;font-size:2.15rem;line-height:1;color:#fff;text-transform:uppercase}
+    .dashboard-list{display:grid;gap:1rem}
+    .team-board{border:1px solid rgba(0,245,255,.22);border-radius:8px;background:linear-gradient(180deg,rgba(17,16,38,.94),rgba(10,8,21,.95));padding:1rem}
+    .team-board.is-complete{border-color:rgba(0,255,136,.45);background:linear-gradient(180deg,rgba(0,255,136,.1),rgba(10,8,21,.95))}
+    .team-board-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:.85rem}
+    .team-board-title{margin:0;font-family:"Barlow Condensed",Impact,sans-serif;font-size:2rem;line-height:1;text-transform:uppercase;color:#fff;text-shadow:0 0 14px rgba(0,245,255,.32)}
+    .team-board-meta{display:flex;flex-wrap:wrap;gap:.4rem;justify-content:flex-end}
+    .dash-chip{display:inline-flex;align-items:center;min-height:1.75rem;border:1px solid rgba(0,245,255,.24);border-radius:999px;padding:.25rem .55rem;color:rgba(238,240,255,.78);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase}
+    .dash-chip.is-current{border-color:rgba(255,230,0,.48);color:var(--yellow);background:rgba(255,230,0,.06)}
+    .dash-chip.is-ok{border-color:rgba(0,255,136,.5);color:var(--green);background:rgba(0,255,136,.06)}
+    .challenge-timeline{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:.45rem}
+    .timeline-step{display:grid;gap:.45rem;align-content:start;min-height:8.5rem;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(255,255,255,.035);padding:.62rem}
+    .timeline-step.is-done{border-color:rgba(0,255,136,.42);background:rgba(0,255,136,.07)}
+    .timeline-step.is-current{border-color:rgba(255,230,0,.56);background:rgba(255,230,0,.08);box-shadow:0 0 18px rgba(255,230,0,.12)}
+    .timeline-step.is-pending{opacity:.62}
+    .step-kicker{color:rgba(0,245,255,.7);font-size:.65rem;letter-spacing:.12em;text-transform:uppercase}
+    .step-title{margin:0;color:#fff;font-family:"Barlow Condensed",Impact,sans-serif;font-size:1.12rem;line-height:1;text-transform:uppercase}
+    .step-status{color:rgba(238,240,255,.58);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase}
+    .step-time{margin-top:auto;color:var(--cyan);font-size:.88rem}
+    .timeline-step.is-done .step-time{color:var(--green)}
+    .timeline-step.is-current .step-time{color:var(--yellow)}
+    .members-line{margin:.75rem 0 0;color:rgba(238,240,255,.6);line-height:1.45}
+    @media (max-width:1080px){.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.challenge-timeline{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:680px){.summary-grid,.challenge-timeline{grid-template-columns:1fr}.team-board-head{display:grid}.team-board-meta{justify-content:flex-start}}
+  </style>
+</head>
+<body>
+<main class="shell" data-admin-dashboard>
+  <div class="topline">
+    <a class="nav-link" href="admin.html">Admin</a>
+    <span>PRCH // Avancement equipes</span>
+    <button type="button" class="secondary" data-auth-logout>Se deconnecter</button>
+  </div>
+
+  <section class="hero">
+    <h1>Avancement</h1>
+    <p class="subtitle">Vue d'ensemble des equipes, des epreuves validees et du chrono de l'epreuve en cours.</p>
+  </section>
+
+  <section data-dashboard-content hidden>
+    <div class="summary-grid" data-summary></div>
+    <div class="dashboard-list" data-dashboard-list></div>
+  </section>
+  <p class="notice" data-notice aria-live="polite"></p>
+</main>
+
+<script src="assets/api-config.js"></script>
+<script src="assets/auth.js"></script>
+<script src="assets/escape.js"></script>
+<script>
+const dashboardContent = document.querySelector("[data-dashboard-content]");
+const summary = document.querySelector("[data-summary]");
+const list = document.querySelector("[data-dashboard-list]");
+const notice = document.querySelector("[data-notice]");
+let liveTimerInterval = null;
+let dashboardRefreshInterval = null;
+
+function setDashboardNotice(message, isError = false){
+  notice.textContent = message;
+  notice.classList.toggle("is-error", isError);
+}
+
+function adminSessionParams(){
+  const session = window.PRCH_AUTH ? PRCH_AUTH.getSession() : null;
+  return {
+    username: session ? session.username : "",
+    userToken: session ? session.userToken : ""
+  };
+}
+
+function parseTime(value){
+  const time = Date.parse(value || "");
+  return Number.isFinite(time) ? time : null;
+}
+
+function formatDuration(ms){
+  if(!Number.isFinite(ms) || ms < 0){
+    return "--";
+  }
+  const totalSeconds = Math.floor(ms / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const pad = value => String(value).padStart(2, "0");
+  return `${days}j ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+}
+
+function normalizeDashboardState(state){
+  const base = state && Array.isArray(state.teams) ? state : { teams: [] };
+  return {
+    teams: base.teams.map(team => ({
+      name: team.name || "",
+      active: team.active !== false,
+      createdAt: team.createdAt || "",
+      startChallengeId: normalizeChallengeId(team.startChallengeId || 1),
+      nextChallengeId: team.nextChallengeId == null ? null : normalizeChallengeId(team.nextChallengeId),
+      completed: Array.isArray(team.completed) ? team.completed.map(Number) : [],
+      progress: Array.isArray(team.progress) ? team.progress.map(row => ({
+        challengeId: Number(row.challengeId),
+        fragment: row.fragment || "",
+        completedAt: row.completedAt || ""
+      })) : [],
+      members: Array.isArray(team.members) ? team.members : []
+    }))
+  };
+}
+
+function buildTimeline(team){
+  const progressByChallenge = new Map();
+  team.progress.forEach(row => {
+    if(row.challengeId){
+      progressByChallenge.set(row.challengeId, row);
+    }
+  });
+
+  let cursor = parseTime(team.createdAt);
+  return challengeSequence(team.startChallengeId).map(challengeId => {
+    const challenge = CHALLENGES.find(item => item.id === challengeId);
+    const progress = progressByChallenge.get(challengeId);
+    const completedAt = parseTime(progress && progress.completedAt);
+    const startAt = cursor;
+    if(completedAt){
+      cursor = completedAt;
+      return { challenge, status: "done", startAt, completedAt, duration: startAt ? completedAt - startAt : null };
+    }
+    if(team.nextChallengeId === challengeId){
+      return { challenge, status: "current", startAt, completedAt: null, duration: startAt ? Date.now() - startAt : null };
+    }
+    return { challenge, status: "pending", startAt: null, completedAt: null, duration: null };
+  });
+}
+
+function renderSummary(state){
+  const teams = state.teams.filter(team => team.active);
+  const completeTeams = teams.filter(team => new Set(team.completed).size >= CHALLENGES.length).length;
+  const runningTeams = teams.filter(team => team.nextChallengeId !== null && new Set(team.completed).size < CHALLENGES.length).length;
+  const completedChallenges = teams.reduce((total, team) => total + new Set(team.completed).size, 0);
+  summary.innerHTML = `
+    <article class="summary-card">
+      <span class="summary-label">Equipes actives</span>
+      <strong class="summary-value">${teams.length}</strong>
+    </article>
+    <article class="summary-card">
+      <span class="summary-label">Equipes terminees</span>
+      <strong class="summary-value">${completeTeams}</strong>
+    </article>
+    <article class="summary-card">
+      <span class="summary-label">Epreuves validees</span>
+      <strong class="summary-value">${completedChallenges}</strong>
+    </article>
+    <article class="summary-card">
+      <span class="summary-label">Chronos actifs</span>
+      <strong class="summary-value">${runningTeams}</strong>
+    </article>
+  `;
+}
+
+function renderTeam(team){
+  const timeline = buildTimeline(team);
+  const doneCount = new Set(team.completed).size;
+  const current = timeline.find(step => step.status === "current");
+  const members = team.members.map(member => member.displayName || member.username).filter(Boolean);
+  return `
+    <article class="team-board ${doneCount >= CHALLENGES.length ? "is-complete" : ""}">
+      <div class="team-board-head">
+        <div>
+          <h2 class="team-board-title">${escapeHtml(team.name)}</h2>
+          <p class="members-line">${members.length ? escapeHtml(members.join(", ")) : "Aucun membre assigne"}</p>
+        </div>
+        <div class="team-board-meta">
+          <span class="dash-chip ${doneCount >= CHALLENGES.length ? "is-ok" : ""}">${doneCount}/${CHALLENGES.length} fragments</span>
+          <span class="dash-chip is-current">${current ? escapeHtml(current.challenge.title) : "Parcours termine"}</span>
+        </div>
+      </div>
+      <div class="challenge-timeline">
+        ${timeline.map(step => {
+          const liveAttr = step.status === "current" && step.startAt ? ` data-live-start="${step.startAt}"` : "";
+          const statusLabel = step.status === "done" ? "Validee" : step.status === "current" ? "En cours" : "A venir";
+          const duration = step.status === "current" && step.startAt ? formatDuration(Date.now() - step.startAt) : formatDuration(step.duration);
+          return `
+            <div class="timeline-step is-${step.status}">
+              <span class="step-kicker">Epreuve ${step.challenge.id}</span>
+              <h3 class="step-title">${escapeHtml(step.challenge.title)}</h3>
+              <span class="step-status">${statusLabel}</span>
+              <strong class="step-time"${liveAttr}>${duration}</strong>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    </article>
+  `;
+}
+
+function renderDashboard(state){
+  const activeTeams = state.teams.filter(team => team.active);
+  renderSummary({ teams: activeTeams });
+  list.innerHTML = activeTeams.length
+    ? activeTeams.map(renderTeam).join("")
+    : '<p class="empty">Aucune equipe active pour le moment.</p>';
+}
+
+function updateLiveTimers(){
+  document.querySelectorAll("[data-live-start]").forEach(node => {
+    node.textContent = formatDuration(Date.now() - Number(node.dataset.liveStart));
+  });
+}
+
+async function loadDashboard(){
+  const session = window.PRCH_AUTH ? PRCH_AUTH.getSession() : null;
+  if(!session){
+    return;
+  }
+  try{
+    const user = await PRCH_AUTH.request("validateUserSession", adminSessionParams());
+    if(user.username !== ORGANIZER_USERNAME){
+      setDashboardNotice("Acces reserve aux organisateurs.", true);
+      return;
+    }
+    setDashboardNotice("Chargement de l'avancement...");
+    await refreshDashboard();
+    dashboardContent.hidden = false;
+    setDashboardNotice("Avancement synchronise.");
+    if(!liveTimerInterval){
+      liveTimerInterval = window.setInterval(updateLiveTimers, 1000);
+    }
+    if(!dashboardRefreshInterval){
+      dashboardRefreshInterval = window.setInterval(() => {
+        refreshDashboard().catch(error => setDashboardNotice(error.message, true));
+      }, 20000);
+    }
+  }catch(error){
+    setDashboardNotice(error.message, true);
+  }
+}
+
+async function refreshDashboard(){
+  const state = normalizeDashboardState(await apiRequest("adminList", adminSessionParams()));
+  renderDashboard(state);
+  updateLiveTimers();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  setTimeout(loadDashboard, 350);
+});
+</script>
+</body>
+</html>

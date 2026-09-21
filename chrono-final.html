@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chronos equipes - Party Retro Chill Hub</title>
+  <link rel="icon" type="image/png" href="assets/favicons/favicon-prch.png"/>
+  <link rel="manifest" href="manifest.webmanifest"/>
+  <meta name="theme-color" content="#07050f"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+  <style>
+    :root{
+      --bg:#07050f;
+      --text:#f6f7ff;
+      --muted:rgba(246,247,255,.58);
+      --cyan:#00f5ff;
+      --magenta:#ff00cc;
+      --yellow:#ffe600;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      overflow:hidden;
+      background:
+        radial-gradient(circle at 50% 0%,rgba(0,245,255,.16),transparent 34%),
+        radial-gradient(circle at 15% 80%,rgba(255,0,204,.12),transparent 30%),
+        #07050f;
+      color:var(--text);
+      font-family:"Share Tech Mono",Consolas,monospace;
+    }
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      background-image:
+        linear-gradient(rgba(0,245,255,.052) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(0,245,255,.052) 1px,transparent 1px);
+      background-size:54px 54px;
+      pointer-events:none;
+    }
+    body::after{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:10;
+      background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.14) 2px,rgba(0,0,0,.14) 4px);
+      pointer-events:none;
+    }
+    .chrono-grid{
+      position:relative;
+      z-index:1;
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      grid-template-rows:repeat(2,minmax(0,1fr));
+      gap:clamp(.65rem,1.7vw,1.25rem);
+      width:100vw;
+      height:100dvh;
+      padding:clamp(.65rem,1.7vw,1.25rem);
+    }
+    .team-clock{
+      --team:#00f5ff;
+      position:relative;
+      display:grid;
+      grid-template-rows:auto 1fr auto;
+      gap:.45rem;
+      min-width:0;
+      border:1px solid color-mix(in srgb,var(--team),transparent 40%);
+      border-radius:8px;
+      background:
+        linear-gradient(145deg,color-mix(in srgb,var(--team),transparent 88%),rgba(12,8,24,.94) 46%,rgba(7,5,15,.98)),
+        rgba(7,5,15,.96);
+      box-shadow:0 0 24px color-mix(in srgb,var(--team),transparent 78%),inset 0 0 22px rgba(255,255,255,.035);
+      padding:clamp(.75rem,1.8vw,1.35rem);
+      color:inherit;
+      cursor:pointer;
+      overflow:hidden;
+      isolation:isolate;
+    }
+    .team-clock::before{
+      content:"";
+      position:absolute;
+      inset:-40% -20% auto;
+      height:60%;
+      background:radial-gradient(circle,color-mix(in srgb,var(--team),transparent 48%),transparent 66%);
+      opacity:.55;
+      z-index:-1;
+    }
+    .team-clock::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      border:1px solid rgba(255,255,255,.04);
+      border-radius:8px;
+      pointer-events:none;
+    }
+    .team-clock:hover,.team-clock:focus-visible{
+      outline:none;
+      border-color:var(--yellow);
+      box-shadow:0 0 30px color-mix(in srgb,var(--team),transparent 62%),0 0 20px rgba(255,230,0,.14),inset 0 0 24px rgba(255,255,255,.045);
+    }
+    .clock-head{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:1rem;
+      min-width:0;
+      text-transform:uppercase;
+    }
+    .team-name{
+      margin:0;
+      font-family:"Barlow Condensed",Impact,sans-serif;
+      font-size:clamp(1.8rem,4vw,4.3rem);
+      line-height:.85;
+      letter-spacing:0;
+      color:#fff;
+      text-shadow:0 0 18px color-mix(in srgb,var(--team),transparent 25%);
+    }
+    .clock-state{
+      flex:0 0 auto;
+      border:1px solid color-mix(in srgb,var(--team),transparent 40%);
+      border-radius:999px;
+      padding:.32rem .55rem;
+      color:color-mix(in srgb,var(--team),#fff 16%);
+      background:rgba(0,0,0,.22);
+      font-size:clamp(.58rem,1vw,.78rem);
+      letter-spacing:.08em;
+    }
+    .team-time{
+      align-self:center;
+      justify-self:center;
+      width:100%;
+      text-align:center;
+      font-family:"Barlow Condensed",Impact,sans-serif;
+      font-size:clamp(3.2rem,8.3vw,10.5rem);
+      line-height:.82;
+      letter-spacing:0;
+      color:#fff;
+      text-shadow:
+        0 0 14px color-mix(in srgb,var(--team),transparent 8%),
+        0 0 34px color-mix(in srgb,var(--team),transparent 52%);
+      font-variant-numeric:tabular-nums;
+      white-space:nowrap;
+    }
+    .team-adjustment{
+      min-height:1.2rem;
+      color:var(--muted);
+      text-align:right;
+      font-size:clamp(.7rem,1.15vw,.95rem);
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .team-clock.is-stopped .clock-state{
+      border-color:rgba(255,230,0,.58);
+      color:var(--yellow);
+      background:rgba(255,230,0,.08);
+    }
+    .team-clock.is-waiting{cursor:default;opacity:.78}
+    .team-clock.is-waiting:hover,.team-clock.is-waiting:focus-visible{border-color:color-mix(in srgb,var(--team),transparent 40%);box-shadow:0 0 24px color-mix(in srgb,var(--team),transparent 78%),inset 0 0 22px rgba(255,255,255,.035)}
+    .start-panel{
+      position:fixed;
+      inset:0;
+      z-index:25;
+      display:grid;
+      place-items:center;
+      padding:2rem;
+      background:rgba(7,5,15,.82);
+      backdrop-filter:blur(8px);
+    }
+    .start-panel[hidden]{display:none}
+    .start-card{
+      width:min(760px,92vw);
+      border:1px solid rgba(0,245,255,.34);
+      border-radius:8px;
+      background:linear-gradient(180deg,rgba(17,16,38,.94),rgba(7,5,15,.96));
+      box-shadow:0 0 42px rgba(0,245,255,.18),inset 0 0 24px rgba(255,230,0,.04);
+      padding:clamp(1.2rem,4vw,3rem);
+      text-align:center;
+    }
+    .start-title{
+      margin:0;
+      font-family:"Barlow Condensed",Impact,sans-serif;
+      font-size:clamp(3.2rem,10vw,7.5rem);
+      line-height:.82;
+      color:#fff;
+      text-transform:uppercase;
+      text-shadow:0 0 22px rgba(255,0,204,.55),0 0 38px rgba(0,245,255,.22);
+    }
+    .start-button{
+      margin-top:1.4rem;
+      min-height:4rem;
+      border:1px solid rgba(255,230,0,.68);
+      border-radius:8px;
+      background:rgba(255,230,0,.1);
+      color:var(--yellow);
+      font:700 clamp(1rem,2.8vw,1.55rem) "Share Tech Mono",Consolas,monospace;
+      letter-spacing:.1em;
+      text-transform:uppercase;
+      padding:.9rem 1.35rem;
+      cursor:pointer;
+    }
+    .start-button:hover,.start-button:focus-visible{outline:none;border-color:var(--cyan);background:rgba(0,245,255,.1)}
+    .start-button:disabled{opacity:.5;cursor:wait}
+    .notice{
+      position:fixed;
+      left:50%;
+      bottom:1rem;
+      z-index:40;
+      transform:translateX(-50%);
+      max-width:min(760px,calc(100vw - 2rem));
+      color:rgba(246,247,255,.84);
+      background:rgba(7,5,15,.88);
+      border:1px solid rgba(0,245,255,.25);
+      border-radius:8px;
+      padding:.7rem .9rem;
+      text-align:center;
+    }
+    .notice:empty{display:none}
+    .notice.is-error{border-color:rgba(255,51,85,.55);color:#ff9aae}
+    .winner-view{
+      --team:#00f5ff;
+      position:fixed;
+      inset:0;
+      z-index:30;
+      display:grid;
+      place-items:center;
+      padding:clamp(1rem,4vw,4rem);
+      background:
+        radial-gradient(circle at 50% 30%,color-mix(in srgb,var(--team),transparent 48%),transparent 36%),
+        linear-gradient(145deg,color-mix(in srgb,var(--team),#07050f 78%),#07050f 62%);
+      opacity:0;
+      pointer-events:none;
+      transform:scale(1.02);
+      transition:opacity .18s ease,transform .18s ease;
+    }
+    .winner-view.is-open{
+      opacity:1;
+      pointer-events:auto;
+      transform:scale(1);
+    }
+    .winner-card{
+      width:min(94vw,1500px);
+      text-align:center;
+      border:1px solid color-mix(in srgb,var(--team),transparent 32%);
+      border-radius:8px;
+      background:rgba(7,5,15,.54);
+      box-shadow:0 0 56px color-mix(in srgb,var(--team),transparent 55%),inset 0 0 32px rgba(255,255,255,.04);
+      padding:clamp(1rem,4vw,4rem);
+    }
+    .winner-name{
+      margin:0;
+      font-family:"Barlow Condensed",Impact,sans-serif;
+      font-size:clamp(4rem,14vw,15rem);
+      line-height:.78;
+      text-transform:uppercase;
+      color:#fff;
+      text-shadow:0 0 28px color-mix(in srgb,var(--team),transparent 20%);
+    }
+    .winner-time{
+      display:block;
+      margin-top:clamp(.8rem,2vw,1.6rem);
+      font-family:"Barlow Condensed",Impact,sans-serif;
+      font-size:clamp(5rem,18vw,20rem);
+      line-height:.8;
+      color:#fff;
+      text-shadow:0 0 24px color-mix(in srgb,var(--team),transparent 12%),0 0 54px color-mix(in srgb,var(--team),transparent 45%);
+      font-variant-numeric:tabular-nums;
+      white-space:nowrap;
+    }
+    @media (max-width:900px){
+      .chrono-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr))}
+    }
+    @media (max-width:620px){
+      .chrono-grid{grid-template-columns:1fr;grid-template-rows:repeat(6,minmax(10rem,1fr));overflow:auto;height:auto;min-height:100dvh}
+      body{overflow:auto}
+      .team-time{font-size:clamp(3.2rem,18vw,7rem)}
+    }
+  </style>
+</head>
+<body>
+  <main class="chrono-grid" data-clock-grid aria-label="Chronos des equipes"></main>
+
+  <section class="start-panel" data-start-panel hidden>
+    <div class="start-card">
+      <h1 class="start-title">Pret ?</h1>
+      <button class="start-button" type="button" data-start-button>Lancer les chronos</button>
+    </div>
+  </section>
+
+  <section class="winner-view" data-winner-view aria-hidden="true">
+    <div class="winner-card">
+      <h1 class="winner-name" data-winner-name></h1>
+      <strong class="winner-time" data-winner-time></strong>
+    </div>
+  </section>
+  <p class="notice" data-notice aria-live="polite"></p>
+
+  <script src="assets/api-config.js"></script>
+  <script>
+    const API_URL = (window.PRCH_API_URL || "").trim();
+    const SELFIE_VIEW_MS = 45000;
+    const COLORS = {
+      bleu: "#00a3ff",
+      rouge: "#ff3355",
+      vert: "#00ff88",
+      violet: "#a855ff",
+      orange: "#ff8c00",
+      jaune: "#ffe600"
+    };
+
+    const grid = document.querySelector("[data-clock-grid]");
+    const startPanel = document.querySelector("[data-start-panel]");
+    const startButton = document.querySelector("[data-start-button]");
+    const winnerView = document.querySelector("[data-winner-view]");
+    const winnerName = document.querySelector("[data-winner-name]");
+    const winnerTime = document.querySelector("[data-winner-time]");
+    const notice = document.querySelector("[data-notice]");
+    let chronoState = { serverNow: "", startedAt: "", teams: [] };
+    let serverOffsetMs = 0;
+    let selfieTimeout = null;
+
+    function setNotice(message, isError = false){
+      notice.textContent = message;
+      notice.classList.toggle("is-error", isError);
+    }
+
+    function escapeHtml(value){
+      return String(value).replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      }[char]));
+    }
+
+    function apiRequest(action, payload = {}){
+      if(!API_URL){
+        return Promise.reject(new Error("API non configuree"));
+      }
+      return new Promise((resolve, reject) => {
+        const callbackName = `prchFinalChrono${Date.now()}${Math.random().toString(36).slice(2)}`;
+        const script = document.createElement("script");
+        const url = new URL(API_URL);
+        url.searchParams.set("callback", callbackName);
+        url.searchParams.set("action", action);
+        Object.entries(payload).forEach(([key, value]) => url.searchParams.set(key, value));
+        const timeout = window.setTimeout(() => {
+          cleanup();
+          reject(new Error("Delai depasse avec le serveur"));
+        }, 12000);
+        function cleanup(){
+          window.clearTimeout(timeout);
+          delete window[callbackName];
+          script.remove();
+        }
+        window[callbackName] = response => {
+          cleanup();
+          if(response && response.ok){
+            resolve(response.data);
+          }else{
+            reject(new Error(response && response.error ? response.error : "Erreur Apps Script"));
+          }
+        };
+        script.onerror = () => {
+          cleanup();
+          reject(new Error("Impossible de contacter le serveur"));
+        };
+        script.src = url.toString();
+        document.body.appendChild(script);
+      });
+    }
+
+    function normalizeState(state){
+      const base = state && Array.isArray(state.teams) ? state : { teams: [] };
+      return {
+        serverNow: base.serverNow || "",
+        startedAt: base.startedAt || "",
+        teams: base.teams.map(team => ({
+          team: team.team || "",
+          color: COLORS[team.color] ? team.color : "bleu",
+          bonusMalusSeconds: Number(team.bonusMalusSeconds || 0),
+          chronoClos: team.chronoClos === true,
+          timestampCloture: team.timestampCloture || "",
+          tempsFinalMs: Number(team.tempsFinalMs || 0)
+        }))
+      };
+    }
+
+    function setState(nextState){
+      chronoState = normalizeState(nextState);
+      const serverNow = Date.parse(chronoState.serverNow);
+      serverOffsetMs = Number.isFinite(serverNow) ? serverNow - Date.now() : 0;
+      startPanel.hidden = Boolean(chronoState.startedAt);
+      renderClocks();
+      updateClocks();
+    }
+
+    function serverNow(){
+      return Date.now() + serverOffsetMs;
+    }
+
+    function startTime(){
+      const time = Date.parse(chronoState.startedAt || "");
+      return Number.isFinite(time) ? time : null;
+    }
+
+    function teamColor(team){
+      return COLORS[team.color] || COLORS.bleu;
+    }
+
+    function teamElapsed(team){
+      if(team.chronoClos){
+        return team.tempsFinalMs;
+      }
+      const start = startTime();
+      if(!start){
+        return 0;
+      }
+      return serverNow() - start + team.bonusMalusSeconds * 1000;
+    }
+
+    function formatDuration(ms){
+      const safeMs = Math.max(0, ms);
+      const totalSeconds = Math.floor(safeMs / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      const pad = value => String(value).padStart(2, "0");
+      return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+    }
+
+    function signedAdjustment(seconds){
+      if(!seconds){
+        return "";
+      }
+      const label = seconds > 0 ? "malus" : "bonus";
+      const sign = seconds > 0 ? "+" : "-";
+      return `${label} ${sign}${formatDuration(Math.abs(seconds) * 1000)}`;
+    }
+
+    function renderClocks(){
+      const hasStarted = Boolean(chronoState.startedAt);
+      grid.innerHTML = chronoState.teams.map(team => `
+        <button class="team-clock ${team.chronoClos ? "is-stopped" : ""} ${hasStarted ? "" : "is-waiting"}" type="button" style="--team:${teamColor(team)}" data-team="${escapeHtml(team.team)}">
+          <span class="clock-head">
+            <h2 class="team-name">${escapeHtml(team.team)}</h2>
+            <span class="clock-state">${team.chronoClos ? "Clos" : hasStarted ? "Live" : "Attente"}</span>
+          </span>
+          <strong class="team-time" data-time="${escapeHtml(team.team)}">${formatDuration(teamElapsed(team))}</strong>
+          <span class="team-adjustment">${signedAdjustment(team.bonusMalusSeconds)}</span>
+        </button>
+      `).join("");
+    }
+
+    function updateClocks(){
+      document.querySelectorAll("[data-time]").forEach(node => {
+        const team = chronoState.teams.find(item => item.team === node.dataset.time);
+        if(node){
+          node.textContent = team ? formatDuration(teamElapsed(team)) : "00:00:00";
+        }
+      });
+    }
+
+    function closeWinnerView(){
+      winnerView.classList.remove("is-open");
+      winnerView.setAttribute("aria-hidden", "true");
+      if(document.fullscreenElement){
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    function openWinnerView(team, finalTime){
+      window.clearTimeout(selfieTimeout);
+      winnerView.style.setProperty("--team", teamColor(team));
+      winnerName.textContent = team.team;
+      winnerTime.textContent = formatDuration(finalTime);
+      winnerView.classList.add("is-open");
+      winnerView.setAttribute("aria-hidden", "false");
+      if(document.documentElement.requestFullscreen){
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+      selfieTimeout = window.setTimeout(closeWinnerView, SELFIE_VIEW_MS);
+    }
+
+    async function stopTeamClock(team){
+      if(!chronoState.startedAt || team.chronoClos){
+        return;
+      }
+      setNotice("Cloture du chrono...");
+      const nextState = await apiRequest("finalChronoStop", { team: team.team });
+      setState(nextState);
+      const stoppedTeam = chronoState.teams.find(item => item.team === team.team) || team;
+      openWinnerView(stoppedTeam, stoppedTeam.tempsFinalMs);
+      setNotice("");
+    }
+
+    async function refreshState({ silent = false } = {}){
+      if(!silent){
+        setNotice("Synchronisation...");
+      }
+      const nextState = await apiRequest("finalChronoGet");
+      setState(nextState);
+      if(!silent){
+        setNotice("");
+      }
+    }
+
+    async function startChronos(){
+      startButton.disabled = true;
+      try{
+        setNotice("Lancement des chronos...");
+        const nextState = await apiRequest("finalChronoStart");
+        setState(nextState);
+        setNotice("");
+      }catch(error){
+        setNotice(error.message, true);
+      }finally{
+        startButton.disabled = false;
+      }
+    }
+
+    refreshState().catch(error => setNotice(error.message, true));
+    window.setInterval(updateClocks, 1000);
+    window.setInterval(() => {
+      refreshState({ silent: true }).catch(error => setNotice(error.message, true));
+    }, 3000);
+
+    grid.addEventListener("click", event => {
+      const button = event.target.closest("[data-team]");
+      if(!button){
+        return;
+      }
+      const team = chronoState.teams.find(item => item.team === button.dataset.team);
+      if(team){
+        stopTeamClock(team).catch(error => setNotice(error.message, true));
+      }
+    });
+
+    startButton.addEventListener("click", startChronos);
+    winnerView.addEventListener("click", closeWinnerView);
+  </script>
+</body>
+</html>

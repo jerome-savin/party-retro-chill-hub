@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="assets/escape.css"/>
   <style>
-    .admin-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
+    .admin-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem}
     .admin-link{display:grid;gap:.55rem;border:1px solid rgba(0,245,255,.22);border-radius:8px;background:rgba(0,245,255,.045);padding:1rem;text-decoration:none;color:inherit}
     .admin-link:hover,.admin-link:focus-visible{border-color:var(--yellow);outline:none;background:rgba(255,230,0,.06)}
     .admin-link strong{font-family:'Barlow Condensed',Impact,sans-serif;font-size:1.7rem;line-height:1;color:#fff;text-transform:uppercase}
@@ -34,6 +34,10 @@
   </section>
 
   <section class="admin-grid" data-admin-links hidden>
+    <a class="admin-link" href="admin-dashboard.html">
+      <strong>Avancement</strong>
+      <span>Vision d'ensemble des equipes, epreuves en cours et temps passes.</span>
+    </a>
     <a class="admin-link" href="admin-communications.html">
       <strong>Communications</strong>
       <span>Comptes, notifications globales et rattrapage des participants.</span>
