@@ -284,101 +284,6 @@ function normalizeChallengeAnswer(value){
   return String(value || "").trim().toUpperCase().replace(/\s+/g, "");
 }
 
-function setEscapeAccessState(state){
-  document.body.classList.remove("escape-access-checking", "escape-access-granted", "escape-access-denied");
-  document.body.classList.add(`escape-access-${state}`);
-}
-
-function showChallengeAccessPanel(root, title, message, isError = false){
-  let panel = root.querySelector("[data-challenge-access-panel]");
-  if(!panel){
-    panel = document.createElement("section");
-    panel.className = "panel challenge-access-panel";
-    panel.dataset.challengeAccessPanel = "";
-    const hero = root.querySelector(".hero");
-    if(hero && hero.nextSibling){
-      root.insertBefore(panel, hero.nextSibling);
-    }else{
-      root.appendChild(panel);
-    }
-  }
-  panel.innerHTML = `
-    <h2 class="panel-title">${escapeHtml(title)}</h2>
-    <p class="challenge-copy">${escapeHtml(message)}</p>
-    <div class="button-row" style="margin-top:1rem">
-      <a class="button" href="3scap3.html">Retour au dashboard</a>
-      <a class="button secondary" href="rejoindre-equipe.html">Rejoindre une equipe</a>
-    </div>
-  `;
-  panel.querySelector(".challenge-copy").classList.toggle("notice", !isError);
-  panel.querySelector(".challenge-copy").classList.toggle("is-error", isError);
-}
-
-async function verifyChallengeAccess(root, challengeId){
-  setEscapeAccessState("checking");
-  showChallengeAccessPanel(root, "Verification d'acces", "Connexion au serveur temporel...");
-  const userSession = getUserSession();
-  if(isOrganizerSession(userSession)){
-    if(!API_URL){
-      setEscapeAccessState("denied");
-      showChallengeAccessPanel(root, "Serveur requis", "L'acces organisateur doit etre confirme par le serveur.", true);
-      return false;
-    }
-    try{
-      const access = await apiRequest("getOrganizerChallengeAccess", {
-        username: userSession.username,
-        userToken: userSession.userToken,
-        challengeId
-      });
-      if(access && access.allowed){
-        setEscapeAccessState("granted");
-        const panel = root.querySelector("[data-challenge-access-panel]");
-        if(panel){
-          panel.remove();
-        }
-        return true;
-      }
-    }catch(error){
-      setEscapeAccessState("denied");
-      showChallengeAccessPanel(root, "Acces organisateur impossible", error.message, true);
-      return false;
-    }
-  }
-  const session = await ensureAssignedSession();
-  if(!session){
-    setEscapeAccessState("denied");
-    showChallengeAccessPanel(root, "Epreuve verrouillee", "Rejoignez une equipe avant d'acceder au contenu de cette epreuve.", true);
-    return false;
-  }
-  if(!API_URL){
-    setEscapeAccessState("denied");
-    showChallengeAccessPanel(root, "Serveur requis", "L'acces aux epreuves doit etre confirme par le serveur.", true);
-    return false;
-  }
-  try{
-    const access = await apiRequest("getChallengeAccess", {
-      team: session.team,
-      teamToken: session.teamToken,
-      challengeId
-    });
-    if(access && access.allowed){
-      setEscapeAccessState("granted");
-      const panel = root.querySelector("[data-challenge-access-panel]");
-      if(panel){
-        panel.remove();
-      }
-      return true;
-    }
-    setEscapeAccessState("denied");
-    showChallengeAccessPanel(root, "Epreuve verrouillee", access && access.reason ? access.reason : "Cette epreuve n'est pas encore accessible pour votre equipe.", true);
-    return false;
-  }catch(error){
-    setEscapeAccessState("denied");
-    showChallengeAccessPanel(root, "Acces impossible", error.message, true);
-    return false;
-  }
-}
-
 async function initDashboard(){
   let state = loadLocalState();
   const root = document.querySelector("[data-dashboard]");
@@ -604,12 +509,6 @@ async function initChallengePage(){
     setNotice(notice, isComplete ? "Epreuve deja validee pour cette equipe." : `Connecte: ${session.team}`);
   }
 
-  const hasAccess = await verifyChallengeAccess(root, id);
-  if(!hasAccess){
-    return;
-  }
-  session = getSession();
-
   completeButton.addEventListener("click", async () => {
     if(!session){
       return;
@@ -687,14 +586,6 @@ async function initFinale(){
     state = nextState;
     render();
   }).catch(() => {});
-}
-
-async function initStandaloneChallengeGate(selector){
-  const root = document.querySelector(selector);
-  if(!root){
-    return;
-  }
-  await verifyChallengeAccess(root, Number(root.dataset.challengeId));
 }
 
 async function initAdminPage(){
@@ -884,8 +775,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if(document.querySelector("[data-dashboard]")) initDashboard();
   if(document.querySelector("[data-join-team]")) initJoinPage();
   if(document.querySelector("[data-challenge-page]")) initChallengePage();
-  if(document.querySelector("[data-journal-challenge]")) initStandaloneChallengeGate("[data-journal-challenge]");
-  if(document.querySelector("[data-agent-challenge]")) initStandaloneChallengeGate("[data-agent-challenge]");
   if(document.querySelector("[data-finale]")) initFinale();
   if(document.querySelector("[data-admin]")) initAdminPage();
 });
