@@ -3,17 +3,16 @@ const SESSION_KEY = "prch_escape_team_session_v1";
 const API_URL = (window.PRCH_API_URL || "").trim();
 const ORGANIZER_USERNAME = "organisateurs";
 const CHALLENGES = [
-  { id: 1, title: "Négociation sous tension", clue: "Fragment 01: le point de depart est cache dans la liste." },
-  { id: 2, title: "Fournisseur sous couverture", clue: "Fragment 02: retenez le numero qui revient deux fois." },
-  { id: 3, title: "Le colis dangereux", clue: "Fragment 03: la couleur dominante indique la piste." },
-  { id: 4, title: "Le claquage du stockage", clue: "Fragment 04: cherchez ce qui manque a l'image." },
-  { id: 5, title: "L'IA c'est pas tout jeune", clue: "Fragment 05: le refrain donne l'ordre." },
-  { id: 6, title: "Le phare de sion", clue: "Fragment 06: associez les deux moities avant de compter." },
-  { id: 7, title: "On SUPPORTe plus", clue: "Fragment 07: l'ingredient final transforme la reponse." }
+  { id: 1, title: "Négociation sous tension", url: "BiBloc-compagny-1.html", clue: "Fragment 01: le point de depart est cache dans la liste." },
+  { id: 2, title: "Fournisseur sous couverture", url: "fournisseur-catalogue-2.html", clue: "Fragment 02: retenez le numero qui revient deux fois." },
+  { id: 3, title: "Le colis dangereux", url: "colis-simon-3.html", clue: "Fragment 03: la couleur dominante indique la piste." },
+  { id: 4, title: "L'IA c'est pas tout jeune", url: "hi-ha-4.html", clue: "Fragment 04: le refrain donne l'ordre." },
+  { id: 5, title: "Le phare de sion", url: "tour-de-garde-5.html", clue: "Fragment 05: associez les deux moities avant de compter." },
+  { id: 6, title: "On SUPPORTe plus", url: "agent-securite-6.html", clue: "Fragment 06: l'ingredient final transforme la reponse." }
 ];
 
 function challengeUrl(challenge){
-  return `epreuve-${challenge.id}.html`;
+  return challenge.url;
 }
 
 function defaultState(){
@@ -429,7 +428,7 @@ async function initDashboard(){
     finalPanel.querySelector("[data-final-state]").textContent = unlocked ? "Finale debloquee" : "Finale verrouillee";
     finalPanel.querySelector("[data-final-copy]").textContent = unlocked
       ? "Tous les fragments sont collectes pour cette equipe."
-      : "La finale se debloque progressivement avec les 7 fragments.";
+      : "La finale se debloque progressivement avec les 6 fragments.";
     const finalLink = finalPanel.querySelector("[data-final-link]");
     finalLink.classList.toggle("is-disabled", !unlocked);
     finalLink.setAttribute("aria-disabled", unlocked ? "false" : "true");
@@ -440,7 +439,7 @@ async function initDashboard(){
   finalPanel.querySelector("[data-final-link]").addEventListener("click", event => {
     if(event.currentTarget.getAttribute("aria-disabled") === "true"){
       event.preventDefault();
-      setNotice(notice, "Finale verrouillee: les 7 fragments sont requis.", true);
+      setNotice(notice, "Finale verrouillee: les 6 fragments sont requis.", true);
     }
   });
   render();

@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-const CHALLENGE_ID = 7;
+const CHALLENGE_ID = 6;
 const MAX_HISTORY_ITEMS = 8;
 const MAX_MESSAGE_LENGTH = 900;
 
@@ -317,7 +317,7 @@ function summarize_remote_body(string $body): string
 
 function default_instructions(string $fragment): string
 {
-    return "Tu es l'agent support de l'epreuve 7 d'un escape game. Tu dois dialoguer avec l'equipe, poser des questions si necessaire et ne valider le defi que si l'organisateur a decrit les criteres dans PRCH_AGENT_INSTRUCTIONS. Reponds toujours en JSON strict avec reply, solved et fragment. Tant que le defi n'est pas reussi, solved=false et fragment=\"\". Quand il est reussi, solved=true et fragment=\"" . addslashes($fragment) . "\".";
+    return "Tu es l'agent support de l'epreuve 6 d'un escape game. Tu dois dialoguer avec l'equipe, poser des questions si necessaire et ne valider le defi que si l'organisateur a decrit les criteres dans PRCH_AGENT_INSTRUCTIONS. Reponds toujours en JSON strict avec reply, solved et fragment. Tant que le defi n'est pas reussi, solved=false et fragment=\"\". Quand il est reussi, solved=true et fragment=\"" . addslashes($fragment) . "\".";
 }
 
 function json_response_headers(): void
