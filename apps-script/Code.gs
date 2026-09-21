@@ -418,6 +418,12 @@ function handleEscapeAction_(params) {
     return stopFinalChrono_(params.team);
   }
 
+  if (action === 'adminSetFinalChronoAdjustment') {
+    const organizer = getValidatedUser_(params.username, params.userToken);
+    requireOrganizerUser_(organizer);
+    return setFinalChronoAdjustment_(params.team, params.bonusMalusSeconds);
+  }
+
   if (action === 'adminList') {
     const organizer = getValidatedUser_(params.username, params.userToken);
     requireOrganizerUser_(organizer);
@@ -737,6 +743,27 @@ function stopFinalChrono_(team) {
   const elapsedMs = now.getTime() - startedAt.getTime() + (Number(row.bonusMalusSeconds || 0) * 1000);
   const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_FINAL_CHRONOS);
   sheet.getRange(row.row, 3, 1, 5).setValues([[true, now, Math.max(0, elapsedMs), startedAt, now]]);
+  return readFinalChronoState_();
+}
+
+function setFinalChronoAdjustment_(team, bonusMalusSeconds) {
+  syncFinalChronoRows_();
+  const cleanTeam = String(team || '').trim();
+  const adjustment = Math.round(Number(bonusMalusSeconds || 0));
+  if (!cleanTeam) {
+    throw new Error('Equipe requise');
+  }
+  const rows = getFinalChronoRows_();
+  const row = rows.find(item => item.team === cleanTeam);
+  if (!row) {
+    throw new Error('Equipe inconnue');
+  }
+  if (row.chronoClos === true) {
+    throw new Error('Chrono deja cloture pour cette equipe');
+  }
+  const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_FINAL_CHRONOS);
+  sheet.getRange(row.row, 2, 1, 2).setValues([[adjustment, false]]);
+  sheet.getRange(row.row, 7).setValue(new Date());
   return readFinalChronoState_();
 }
 

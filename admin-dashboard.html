@@ -25,6 +25,13 @@
     .dash-chip{display:inline-flex;align-items:center;min-height:1.75rem;border:1px solid rgba(0,245,255,.24);border-radius:999px;padding:.25rem .55rem;color:rgba(238,240,255,.78);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase}
     .dash-chip.is-current{border-color:rgba(255,230,0,.48);color:var(--yellow);background:rgba(255,230,0,.06)}
     .dash-chip.is-ok{border-color:rgba(0,255,136,.5);color:var(--green);background:rgba(0,255,136,.06)}
+    .adjust-panel{display:grid;grid-template-columns:auto 1fr auto;gap:.65rem;align-items:center;border:1px solid rgba(255,230,0,.2);border-radius:8px;background:rgba(255,230,0,.045);padding:.65rem;margin-bottom:.85rem}
+    .adjust-label{color:rgba(255,230,0,.86);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase}
+    .adjust-controls{display:flex;flex-wrap:wrap;gap:.35rem;align-items:center}
+    .adjust-controls button{min-height:2.1rem;padding:.35rem .55rem;font-size:.68rem}
+    .adjust-controls input{width:7rem;min-height:2.1rem;padding:.35rem .5rem;text-align:right}
+    .adjust-value{color:rgba(238,240,255,.72);font-size:.75rem;text-align:right;text-transform:uppercase;letter-spacing:.08em}
+    .adjust-panel.is-closed{opacity:.6}
     .challenge-timeline{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:.45rem}
     .timeline-step{display:grid;gap:.45rem;align-content:start;min-height:8.5rem;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(255,255,255,.035);padding:.62rem}
     .timeline-step.is-done{border-color:rgba(0,255,136,.42);background:rgba(0,255,136,.07)}
@@ -38,7 +45,7 @@
     .timeline-step.is-current .step-time{color:var(--yellow)}
     .members-line{margin:.75rem 0 0;color:rgba(238,240,255,.6);line-height:1.45}
     @media (max-width:1080px){.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.challenge-timeline{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media (max-width:680px){.summary-grid,.challenge-timeline{grid-template-columns:1fr}.team-board-head{display:grid}.team-board-meta{justify-content:flex-start}}
+    @media (max-width:680px){.summary-grid,.challenge-timeline,.adjust-panel{grid-template-columns:1fr}.team-board-head{display:grid}.team-board-meta{justify-content:flex-start}.adjust-value{text-align:left}}
   </style>
 </head>
 <body>
@@ -71,6 +78,7 @@ const list = document.querySelector("[data-dashboard-list]");
 const notice = document.querySelector("[data-notice]");
 let liveTimerInterval = null;
 let dashboardRefreshInterval = null;
+let dashboardState = { teams: [] };
 
 function setDashboardNotice(message, isError = false){
   notice.textContent = message;
@@ -103,6 +111,15 @@ function formatDuration(ms){
   return `${days}j ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 }
 
+function formatSignedAdjustment(seconds){
+  const value = Number(seconds || 0);
+  if(!value){
+    return "Aucun ajustement";
+  }
+  const label = value > 0 ? "Malus" : "Bonus";
+  return `${label} ${value > 0 ? "+" : "-"}${formatDuration(Math.abs(value) * 1000)}`;
+}
+
 function normalizeDashboardState(state){
   const base = state && Array.isArray(state.teams) ? state : { teams: [] };
   return {
@@ -113,6 +130,7 @@ function normalizeDashboardState(state){
       startChallengeId: normalizeChallengeId(team.startChallengeId || 1),
       nextChallengeId: team.nextChallengeId == null ? null : normalizeChallengeId(team.nextChallengeId),
       completed: Array.isArray(team.completed) ? team.completed.map(Number) : [],
+      finalChrono: team.finalChrono || { bonusMalusSeconds: 0, chronoClos: false },
       progress: Array.isArray(team.progress) ? team.progress.map(row => ({
         challengeId: Number(row.challengeId),
         fragment: row.fragment || "",
@@ -178,8 +196,11 @@ function renderTeam(team){
   const doneCount = new Set(team.completed).size;
   const current = timeline.find(step => step.status === "current");
   const members = team.members.map(member => member.displayName || member.username).filter(Boolean);
+  const adjustmentSeconds = Number(team.finalChrono.bonusMalusSeconds || 0);
+  const adjustmentMinutes = adjustmentSeconds / 60;
+  const adjustmentDisabled = team.finalChrono.chronoClos ? " disabled" : "";
   return `
-    <article class="team-board ${doneCount >= CHALLENGES.length ? "is-complete" : ""}">
+    <article class="team-board ${doneCount >= CHALLENGES.length ? "is-complete" : ""}" data-team-board="${escapeHtml(team.name)}">
       <div class="team-board-head">
         <div>
           <h2 class="team-board-title">${escapeHtml(team.name)}</h2>
@@ -189,6 +210,18 @@ function renderTeam(team){
           <span class="dash-chip ${doneCount >= CHALLENGES.length ? "is-ok" : ""}">${doneCount}/${CHALLENGES.length} fragments</span>
           <span class="dash-chip is-current">${current ? escapeHtml(current.challenge.title) : "Parcours termine"}</span>
         </div>
+      </div>
+      <div class="adjust-panel ${team.finalChrono.chronoClos ? "is-closed" : ""}">
+        <span class="adjust-label">Bonus / malus finale</span>
+        <div class="adjust-controls">
+          <button type="button" class="secondary" data-adjust-delta="-300" data-adjust-team="${escapeHtml(team.name)}"${adjustmentDisabled}>Bonus 5</button>
+          <button type="button" class="secondary" data-adjust-delta="-60" data-adjust-team="${escapeHtml(team.name)}"${adjustmentDisabled}>Bonus 1</button>
+          <input type="number" step="1" inputmode="numeric" value="${adjustmentMinutes}" data-adjust-input="${escapeHtml(team.name)}"${adjustmentDisabled}/>
+          <button type="button" class="secondary" data-adjust-delta="60" data-adjust-team="${escapeHtml(team.name)}"${adjustmentDisabled}>Malus 1</button>
+          <button type="button" class="secondary" data-adjust-delta="300" data-adjust-team="${escapeHtml(team.name)}"${adjustmentDisabled}>Malus 5</button>
+          <button type="button" data-adjust-save="${escapeHtml(team.name)}"${adjustmentDisabled}>OK</button>
+        </div>
+        <span class="adjust-value">${team.finalChrono.chronoClos ? "Chrono cloture" : formatSignedAdjustment(adjustmentSeconds)}</span>
       </div>
       <div class="challenge-timeline">
         ${timeline.map(step => {
@@ -215,6 +248,17 @@ function renderDashboard(state){
   list.innerHTML = activeTeams.length
     ? activeTeams.map(renderTeam).join("")
     : '<p class="empty">Aucune equipe active pour le moment.</p>';
+}
+
+function mergeFinalChronos(state, finalState){
+  const finalByTeam = new Map((finalState.teams || []).map(team => [team.team, team]));
+  return {
+    ...state,
+    teams: state.teams.map(team => ({
+      ...team,
+      finalChrono: finalByTeam.get(team.name) || { bonusMalusSeconds: 0, chronoClos: false }
+    }))
+  };
 }
 
 function updateLiveTimers(){
@@ -252,10 +296,47 @@ async function loadDashboard(){
 }
 
 async function refreshDashboard(){
-  const state = normalizeDashboardState(await apiRequest("adminList", adminSessionParams()));
-  renderDashboard(state);
+  const [adminState, finalState] = await Promise.all([
+    apiRequest("adminList", adminSessionParams()),
+    apiRequest("finalChronoGet")
+  ]);
+  dashboardState = normalizeDashboardState(mergeFinalChronos(adminState, finalState || { teams: [] }));
+  renderDashboard(dashboardState);
   updateLiveTimers();
 }
+
+async function setTeamAdjustment(teamName, bonusMalusSeconds){
+  setDashboardNotice("Mise a jour du bonus/malus...");
+  const finalState = await apiRequest("adminSetFinalChronoAdjustment", {
+    ...adminSessionParams(),
+    team: teamName,
+    bonusMalusSeconds
+  });
+  dashboardState = normalizeDashboardState(mergeFinalChronos(dashboardState, finalState || { teams: [] }));
+  renderDashboard(dashboardState);
+  updateLiveTimers();
+  setDashboardNotice("Bonus/malus mis a jour.");
+}
+
+list.addEventListener("click", event => {
+  const deltaButton = event.target.closest("[data-adjust-delta]");
+  const saveButton = event.target.closest("[data-adjust-save]");
+  if(!deltaButton && !saveButton){
+    return;
+  }
+  const teamName = deltaButton ? deltaButton.dataset.adjustTeam : saveButton.dataset.adjustSave;
+  const team = dashboardState.teams.find(item => item.name === teamName);
+  if(!team){
+    return;
+  }
+  const card = event.target.closest("[data-team-board]");
+  const input = card ? card.querySelector("[data-adjust-input]") : null;
+  const currentSeconds = Number(team.finalChrono.bonusMalusSeconds || 0);
+  const nextSeconds = deltaButton
+    ? currentSeconds + Number(deltaButton.dataset.adjustDelta || 0)
+    : Math.round(Number(input ? input.value : 0) * 60);
+  setTeamAdjustment(teamName, nextSeconds).catch(error => setDashboardNotice(error.message, true));
+});
 
 document.addEventListener("DOMContentLoaded", () => {
   setTimeout(loadDashboard, 350);
