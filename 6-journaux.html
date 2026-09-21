@@ -22,9 +22,20 @@
     .poster-frame::before{content:attr(data-label);position:absolute;top:.45rem;left:.45rem;z-index:1;font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(0,245,255,.72);background:rgba(7,5,15,.82);border:1px solid rgba(0,245,255,.25);padding:.3rem .4rem}
     .poster-frame img{display:block;width:100%;height:100%;object-fit:cover}
     .poster-frame:focus-visible{outline:2px solid var(--cyan);outline-offset:4px}
+    .instruction-media{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,280px);gap:1rem;align-items:start;margin-top:.8rem}
+    .instruction-audio,.instruction-example{border:1px solid rgba(0,245,255,.22);border-radius:8px;background:rgba(0,245,255,.045);padding:.75rem}
+    .instruction-audio audio{width:100%;margin-top:.45rem}
+    .instruction-example img{display:block;width:100%;height:auto;max-height:180px;object-fit:contain;border-radius:6px;border:1px solid rgba(0,245,255,.2);cursor:zoom-in;background:rgba(7,5,15,.58)}
+    .instruction-example button{display:block;width:100%;max-width:220px;border:0;background:transparent;padding:0;margin:.45rem auto 0;cursor:zoom-in}
+    .instruction-example button:focus-visible{outline:2px solid var(--cyan);outline-offset:4px}
+    .instruction-media [hidden]{display:none!important}
     .choice{width:100%;min-height:2.65rem}
     .choice.is-wrong{border-color:var(--danger);background:rgba(255,79,109,.16)}
     .choice.is-right{border-color:var(--green);background:rgba(0,255,136,.16)}
+    .poster-explanation{display:none;border:1px solid rgba(255,230,0,.28);border-radius:8px;background:rgba(255,230,0,.06);padding:.65rem;color:rgba(238,240,255,.86);font-size:.88rem;line-height:1.45}
+    .poster-explanation.is-visible{display:block}
+    .poster-explanation strong{color:var(--yellow)}
+    .series-actions{display:flex;justify-content:flex-end;margin-top:1rem}
     .penalty-panel{display:flex;align-items:center;justify-content:center;gap:.65rem;border:1px solid rgba(0,245,255,.25);border-radius:8px;background:rgba(0,245,255,.05);padding:.75rem;margin-bottom:1rem;color:rgba(238,240,255,.82)}
     .penalty-panel.is-active{border-color:rgba(255,79,109,.75);background:rgba(255,79,109,.08);color:#fff}
     .penalty-time{font-weight:900;color:var(--yellow);text-shadow:0 0 12px rgba(255,230,0,.7)}
@@ -34,6 +45,7 @@
     .lightbox-image{display:block;max-width:min(92vw,980px);max-height:88vh;object-fit:contain;border:1px solid rgba(0,245,255,.35);box-shadow:0 0 34px rgba(0,245,255,.18)}
     .lightbox-close{position:fixed;top:1rem;right:1rem;width:2.7rem;height:2.7rem;border:1px solid rgba(0,245,255,.45);background:rgba(7,5,15,.9);color:#fff;font-size:1.2rem;cursor:pointer}
     @media (max-width:900px){.poster-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:720px){.instruction-media{grid-template-columns:1fr}}
     @media (max-width:540px){.poster-grid{grid-template-columns:1fr}.series-head{display:grid}.poster-card{max-width:360px;margin:0 auto}}
   </style>
 </head>
@@ -47,10 +59,18 @@
   </section>
 
   <section class="journal-intro panel">
-    <h2 class="panel-title">Le phare de sion</h2>
-    <p class="challenge-copy">A chaque etape, comparez les 4 couvertures affichees et choisissez celle qui semble appartenir a la bonne ligne temporelle.</p>
-    <p class="challenge-copy">Une seule reponse est valide par serie. En cas d'erreur, le systeme bloque temporairement les choix avant de vous laisser retenter. La serie suivante ne s'ouvre qu'apres validation de la precedente.</p>
-    <p class="challenge-copy">Le bloc fragment n'apparaitra qu'une fois les 4 series resolues.</p>
+    <div class="instruction-media">
+      <div class="instruction-audio" data-instruction-audio>
+        <strong>Message vocal</strong>
+        <audio controls preload="metadata" src="assets/journaux/instructions.mp3"></audio>
+      </div>
+      <figure class="instruction-example" data-instruction-example>
+        <strong>Exemple</strong>
+        <button type="button" data-example-preview aria-label="Ouvrir l'exemple en grand">
+          <img src="assets/posters/exemple.png" alt="Exemple d'analyse d'une couverture"/>
+        </button>
+      </figure>
+    </div>
     <p class="notice" data-session-notice></p>
   </section>
 
@@ -77,8 +97,8 @@
 const journalSeries = [
   {
     id: 1,
-    title: 'Signal en kiosque',
-    correct: 3,
+    title: 'Années 80',
+    correct: 4,
     posters: [
       { id: 1, file: '1 - 1 - Tabac.png' },
       { id: 2, file: '1 - 2 - Vie un sens.png' },
@@ -88,38 +108,64 @@ const journalSeries = [
   },
   {
     id: 2,
-    title: 'Edition du soir',
-    correct: 1,
+    title: 'Années 90',
+    correct: 2,
     posters: [
       { id: 1, file: '2 - 1 - Indifference religieuse.png' },
+      { id: 2, file: '2 - 2 - Controverse mort Jésus.png' },
       { id: 3, file: '2 - 3 - Question capitale.png' },
-      { id: 4, file: '2 - 4 - Confession péchés.png' },
-      { id: 2, file: '2 - 2 - Controverse mort Jésus.png' }
+      { id: 4, file: '2 - 4 - Confession péchés.png' }
     ]
   },
   {
     id: 3,
-    title: 'Archives pirates',
+    title: 'Années 2000',
     correct: 4,
     posters: [
-      { id: 2, file: '3 - 2 - Avenir.png' },
-      { id: 4, file: '3 - 4 - Avertissement.png' },
       { id: 1, file: '3 - 1 - La bible.png' },
-      { id: 3, file: '3 - 3 - Réussite.png' }
+      { id: 2, file: '3 - 2 - Avenir.png' },
+      { id: 3, file: '3 - 3 - Réussite.png' },
+      { id: 4, file: '3 - 4 - Avertissement.png' }
     ]
   },
   {
     id: 4,
-    title: 'Derniere impression',
+    title: 'Etaprès ?',
     correct: 2,
     posters: [
-      { id: 3, file: 'journal-3.jpg' },
-      { id: 2, file: 'journal-2.jpg' },
-      { id: 4, file: 'journal-4.jpg' },
-      { id: 1, file: '4 - 1 - Futur.png' }
+      { id: 1, file: '4 - 1 - Futur.png' },
+      { id: 2, file: '4 - 2 - La paix.png' },
+      { id: 3, file: '4 - 3 - Avenir.png' },
+      { id: 4, file: '4 - 4 - Confiance.png' }
     ]
   }
 ];
+const posterExplanations = {
+  1: {
+    1: 'Fausse piste : l homme a un iPhone sur la table, alors que l iPhone n existait pas en 1980.',
+    2: 'Fausse piste : la femme porte des AirPods dans les oreilles, alors que les AirPods n existaient pas en 1980.',
+    3: 'Fausse piste : la tasse mentionne Teams, une application qui n existait pas en 1980.',
+    4: 'Bonne couverture : elle ne contient pas d anachronisme visible pour 1980.'
+  },
+  2: {
+    1: 'Fausse piste : l homme tient une tasse avec le logo Starbucks, qui n existait pas encore dans cette forme en 1990.',
+    2: 'Bonne couverture : c est la seule qui ne contient pas d element anachronique visible pour 1990.',
+    3: 'Fausse piste : on voit le logo euro, alors que l euro n existait pas encore comme monnaie en 1990.',
+    4: 'Fausse piste : l homme porte une Apple Watch au poignet, objet impossible en 1990.'
+  },
+  3: {
+    1: 'Fausse piste : cette version grise de la Traduction du monde nouveau n etait pas encore parue dans les annees 2000.',
+    2: 'Fausse piste : l ecran affiche le logo Google Chrome, qui n existait pas dans les annees 2000.',
+    3: 'Fausse piste : le logo La Tour de Garde manque en haut de la couverture, elle n est donc pas correctement constituee.',
+    4: 'Bonne couverture : elle respecte la composition attendue et ne contient pas d anachronisme visible.'
+  },
+  4: {
+    1: 'Fausse piste : la date du 29 fevrier 2030 est impossible, car 2030 n est pas une annee bissextile.',
+    2: 'Bonne couverture : elle ne presente pas d incoherence temporelle ou logique evidente.',
+    3: 'Fausse piste : la photo indique qu en 1935 la personne avait 100 ans, alors que l on est en 2030. Le calcul ne peut pas fonctionner.',
+    4: 'Fausse piste : l horloge et son reflet sont identiques, alors que le reflet devrait inverser l image.'
+  }
+};
 const challengeId = 6;
 const finalFragment = 'PHARE-SION-1985';
 const penaltyDuration = 45;
@@ -142,6 +188,23 @@ function formatTime(seconds){
   return `00:${String(seconds).padStart(2, '0')}`;
 }
 
+function explanationFor(seriesId, posterId){
+  return (posterExplanations[seriesId] && posterExplanations[seriesId][posterId]) || 'Explication a completer.';
+}
+
+function revealExplanation(seriesId, posterId){
+  const explanation = document.querySelector(`[data-explanation="${seriesId}-${posterId}"]`);
+  if(explanation){
+    explanation.classList.add('is-visible');
+  }
+}
+
+function revealWrongExplanations(series){
+  series.posters
+    .filter(poster => poster.id !== series.correct)
+    .forEach(poster => revealExplanation(series.id, poster.id));
+}
+
 function renderSeries(){
   const series = journalSeries[activeSeriesIndex];
   if(!series){
@@ -161,9 +224,11 @@ function renderSeries(){
               <img src="assets/posters/${encodeURIComponent(poster.file)}" alt="Journal ${index + 1} de la serie ${series.id}"/>
             </div>
             <button class="choice" type="button" data-series="${series.id}" data-choice="${poster.id}">C'est la vraie</button>
+            <p class="poster-explanation" data-explanation="${series.id}-${poster.id}"><strong>Explication.</strong> ${explanationFor(series.id, poster.id)}</p>
           </article>
         `).join('')}
       </div>
+      <div class="series-actions" data-series-actions></div>
     </article>
   `;
 }
@@ -175,6 +240,7 @@ function setLocked(locked){
 }
 
 function startPenalty(button){
+  revealExplanation(Number(button.dataset.series), Number(button.dataset.choice));
   penaltyRemaining = penaltyDuration;
   button.classList.add('is-wrong');
   penaltyPanel.classList.add('is-active');
@@ -198,26 +264,19 @@ function startPenalty(button){
 }
 
 function solveSeries(button, seriesId){
+  const series = journalSeries.find(item => item.id === seriesId);
   solvedSeries.add(seriesId);
   button.classList.add('is-right');
   const seriesNode = document.querySelector(`[data-series="${seriesId}"]`);
   seriesNode.classList.add('is-solved');
   seriesNode.querySelector('[data-series-state]').textContent = 'Identifie';
+  revealWrongExplanations(series);
   setLocked(false);
-  if(solvedSeries.size === journalSeries.length){
-    renderSolution();
-    solutionPanel.hidden = false;
-    solutionPanel.classList.remove('is-locked');
-    solutionPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    grid.innerHTML = '';
-    return;
-  }
 
-  activeSeriesIndex += 1;
-  window.setTimeout(() => {
-    renderSeries();
-    grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 700);
+  const actions = seriesNode.querySelector('[data-series-actions]');
+  actions.innerHTML = solvedSeries.size === journalSeries.length
+    ? '<button type="button" data-show-fragment>Afficher le fragment</button>'
+    : '<button type="button" data-next-series>Serie suivante</button>';
 }
 
 function renderSolution(){
@@ -250,6 +309,25 @@ function closeLightbox(){
   }
 }
 
+function setupInstructionMedia(){
+  const audioBlock = document.querySelector('[data-instruction-audio]');
+  const audio = audioBlock ? audioBlock.querySelector('audio') : null;
+  const exampleBlock = document.querySelector('[data-instruction-example]');
+  const example = exampleBlock ? exampleBlock.querySelector('img') : null;
+
+  if(audio){
+    audio.addEventListener('error', () => {
+      audioBlock.hidden = true;
+    });
+  }
+
+  if(example){
+    example.addEventListener('error', () => {
+      exampleBlock.hidden = true;
+    });
+  }
+}
+
 async function saveFragment(){
   const session = getSession();
   const notice = solutionPanel.querySelector('[data-notice]');
@@ -273,11 +351,27 @@ async function saveFragment(){
   }
 }
 
+setupInstructionMedia();
 renderSeries();
 const session = getSession();
 sessionNotice.textContent = session ? `Equipe connectee: ${session.team}` : 'Aucune equipe connectee sur cet appareil. Vous pouvez jouer, mais la validation demandera une connexion equipe.';
 
 grid.addEventListener('click', event => {
+  if(event.target.closest('[data-next-series]')){
+    activeSeriesIndex += 1;
+    renderSeries();
+    grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
+  if(event.target.closest('[data-show-fragment]')){
+    renderSolution();
+    solutionPanel.hidden = false;
+    solutionPanel.classList.remove('is-locked');
+    grid.innerHTML = '';
+    solutionPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
   const frame = event.target.closest('.poster-frame');
   const button = event.target.closest('.choice');
   if(frame){
@@ -298,6 +392,19 @@ grid.addEventListener('click', event => {
     return;
   }
   startPenalty(button);
+});
+
+document.addEventListener('click', event => {
+  const preview = event.target.closest('[data-example-preview]');
+  if(!preview){
+    return;
+  }
+  const image = preview.querySelector('img');
+  lightboxImage.src = image.src;
+  lightboxImage.alt = image.alt;
+  lightbox.classList.add('is-open');
+  lightbox.setAttribute('aria-hidden', 'false');
+  lightboxClose.focus();
 });
 
 grid.addEventListener('keydown', event => {
