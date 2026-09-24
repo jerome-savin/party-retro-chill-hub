@@ -30,7 +30,13 @@
 
   <section class="hero">
     <h1>Epreuve 06</h1>
-    <p class="subtitle">Discutez avec l'agent. Quand il confirme que votre equipe a reussi le defi, il fournit et valide le fragment.</p>
+    <p class="subtitle">Ouf, Hub fonctionne toujours en 2036. Le Support conserve peut-être le dernier fragment dans les commentaires d'un incident.</p>
+  </section>
+
+  <section class="panel" style="margin-bottom:1rem">
+    <h2 class="panel-title">Incident retrouvé</h2>
+    <p class="challenge-copy">Vous avez suivi le lien laissé dans les commentaires de l'incident. L'agent de sécurité temporelle est maintenant en ligne.</p>
+    <p class="challenge-copy" style="margin-top:.65rem">Répondez à son quiz et convainquez-le que votre équipe peut recevoir le fragment protégé par Dan.</p>
   </section>
 
   <section class="agent-layout">
@@ -147,7 +153,7 @@ if(!session){
   setInputEnabled(false);
 }else{
   sessionState.textContent = `Equipe connectee: ${session.team}`;
-  addMessage('agent', 'Support temporel en ligne. Expliquez-moi votre piste, votre raisonnement ou votre reponse finale.');
+  addMessage('agent', 'Support Hub 2036 en ligne. Le fragment de Dan est protege. Repondez a mes questions pour prouver que votre equipe peut y acceder.');
   setInputEnabled(true);
 }
 
