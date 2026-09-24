@@ -554,6 +554,111 @@ async function initFinale(){
   const fragments = root.querySelector("[data-fragments]");
   const locked = root.querySelector("[data-locked]");
   const unlocked = root.querySelector("[data-unlocked]");
+  const puzzle = root.querySelector("[data-final-puzzle]");
+  const puzzleGrid = root.querySelector("[data-puzzle-grid]");
+  const puzzleStatus = root.querySelector("[data-puzzle-status]");
+  const columnCount = 20;
+  const expectedWord = normalizePuzzleText(root.dataset.finalWord || "");
+  const pixelPattern = [
+    { t: [2, 3, 4, 5, 6], a: [9, 10, 11], b: [14, 15, 16, 17] },
+    { t: [4], a: [8, 12], b: [14, 18] },
+    { t: [4], a: [8, 12], b: [14, 15, 16, 17] },
+    { t: [4], a: [8, 9, 10, 11, 12], b: [14, 18] },
+    { t: [4], a: [8, 12], b: [14, 18] },
+    { t: [4], a: [8, 12], b: [14, 15, 16, 17] }
+  ];
+  let puzzleTeam = "";
+  let puzzleOffsets = CHALLENGES.map(() => 0);
+
+  function normalizePuzzleText(value){
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toUpperCase()
+      .replace(/\s+/g, "");
+  }
+
+  function fragmentCells(value){
+    const characters = Array.from(normalizePuzzleText(value)).slice(0, columnCount);
+    return characters.concat(Array(columnCount - characters.length).fill(""));
+  }
+
+  function shiftedCells(cells, offset){
+    return cells.map((_, index) => {
+      const sourceIndex = (index - offset + columnCount) % columnCount;
+      return cells[sourceIndex];
+    });
+  }
+
+  function findSolvedColumn(rows){
+    if(expectedWord.length !== CHALLENGES.length){
+      return -1;
+    }
+    return rows.map(row => row[0]).join("") === expectedWord ? 0 : -1;
+  }
+
+  function solvedPixelRow(rowIndex){
+    const pixels = Array(columnCount).fill("");
+    Object.entries(pixelPattern[rowIndex] || {}).forEach(([color, columns]) => {
+      columns.forEach(column => {
+        pixels[column] = color;
+      });
+    });
+    return pixels;
+  }
+
+  function initialPixelRow(fragment, rowIndex){
+    const targetLetter = expectedWord[rowIndex] || "";
+    const targetIndex = fragment.indexOf(targetLetter);
+    if(targetIndex < 0){
+      return Array(columnCount).fill("");
+    }
+    return shiftedCells(solvedPixelRow(rowIndex), targetIndex);
+  }
+
+  function renderPuzzle(team, isUnlocked){
+    puzzle.hidden = !isUnlocked;
+    if(!isUnlocked){
+      return;
+    }
+    if(puzzleTeam !== team.name){
+      puzzleTeam = team.name;
+      puzzleOffsets = CHALLENGES.map(() => 0);
+    }
+
+    const fragmentsByRow = CHALLENGES.map(challenge => fragmentCells(team.fragments[challenge.id] || ""));
+    const rows = fragmentsByRow.map((cells, index) => shiftedCells(cells, puzzleOffsets[index]));
+    const pixelRows = fragmentsByRow.map((cells, index) => {
+      const pixels = initialPixelRow(cells.join(""), index);
+      return shiftedCells(pixels, puzzleOffsets[index]);
+    });
+    const solvedColumn = findSolvedColumn(rows);
+    const isSolved = solvedColumn >= 0;
+    puzzle.classList.toggle("is-solved", isSolved);
+
+    puzzleGrid.innerHTML = rows.map((cells, rowIndex) => `
+      <div class="cipher-row" data-puzzle-row="${rowIndex}">
+        <span class="cipher-row-label">Fragment ${rowIndex + 1}</span>
+        <button class="cipher-shift" type="button" data-row="${rowIndex}" data-direction="-1" aria-label="Decaler le fragment ${rowIndex + 1} vers la gauche" ${isSolved ? "disabled" : ""}>&larr;</button>
+        <div class="cipher-cells">
+          ${cells.map((character, columnIndex) => {
+            const pixel = pixelRows[rowIndex][columnIndex];
+            return `<span class="cipher-cell ${character ? "" : "is-empty"} ${pixel ? `is-pixel-${pixel}` : ""} ${columnIndex === solvedColumn ? "is-target" : ""}" data-column="${columnIndex}">${character ? escapeHtml(character) : "&middot;"}</span>`;
+          }).join("")}
+        </div>
+        <button class="cipher-shift" type="button" data-row="${rowIndex}" data-direction="1" aria-label="Decaler le fragment ${rowIndex + 1} vers la droite" ${isSolved ? "disabled" : ""}>&rarr;</button>
+      </div>
+    `).join("");
+
+    puzzleStatus.classList.toggle("is-solved", isSolved);
+    if(isSolved){
+      puzzleStatus.textContent = "Chronologie stabilisee. Alignement verrouille.";
+    }else if(expectedWord){
+      puzzleStatus.textContent = "Cherchez l'alignement qui fera apparaitre le mot final dans une colonne.";
+    }else{
+      puzzleStatus.textContent = "Mode preparation : la condition finale sera activee lorsque le mot attendu sera configure.";
+    }
+  }
 
   function render(){
     const team = getTeam(state);
@@ -562,6 +667,7 @@ async function initFinale(){
     const isUnlocked = completedCount(team) === CHALLENGES.length;
     locked.hidden = isUnlocked;
     unlocked.hidden = !isUnlocked;
+    renderPuzzle(team, isUnlocked);
     fragments.innerHTML = CHALLENGES.map(challenge => {
       const fragment = team.fragments[challenge.id];
       return `<div class="team-pill fragment-row">
@@ -575,6 +681,16 @@ async function initFinale(){
     state.selectedTeam = select.value;
     saveLocalState(state);
     render();
+  });
+  puzzleGrid.addEventListener("click", event => {
+    const button = event.target.closest("[data-row][data-direction]");
+    if(!button || button.disabled){
+      return;
+    }
+    const row = Number(button.dataset.row);
+    const direction = Number(button.dataset.direction);
+    puzzleOffsets[row] = (puzzleOffsets[row] + direction + columnCount) % columnCount;
+    renderPuzzle(getTeam(state), true);
   });
   render();
   ensureAssignedSession().then(session => {

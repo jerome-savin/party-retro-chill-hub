@@ -8,9 +8,36 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="assets/escape.css"/>
+  <style>
+    .finale-layout{display:grid;gap:1rem}
+    .finale-board{position:relative;z-index:21;padding:1rem;overflow:hidden}
+    .finale-board-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1rem}
+    .finale-board-head h2{margin:0;font-family:"Barlow Condensed",Impact,sans-serif;font-size:clamp(1.8rem,5vw,2.8rem);text-transform:uppercase;color:var(--cyan)}
+    .finale-board-head p{max-width:680px;margin:.4rem 0 0;color:var(--muted);line-height:1.5}
+    .cipher-scroll{overflow-x:auto;padding:.4rem 0 .8rem}
+    .cipher-grid{display:grid;gap:.48rem;min-width:940px}
+    .cipher-row{display:grid;grid-template-columns:42px minmax(760px,1fr) 42px;gap:.45rem;align-items:center}
+    .cipher-shift{width:42px;min-width:42px;height:42px;min-height:42px;padding:0;border-color:rgba(0,245,255,.42);color:var(--cyan);font-size:1.35rem}
+    .cipher-cells{display:grid;grid-template-columns:repeat(20,minmax(0,1fr));gap:3px}
+    .cipher-cell{display:grid;place-items:center;aspect-ratio:1;min-width:34px;border:1px solid rgba(0,245,255,.24);border-radius:4px;background:rgba(0,245,255,.035);color:#fff;font-family:"Share Tech Mono",Consolas,monospace;font-size:1.35rem;font-weight:700;line-height:1;text-transform:uppercase;text-shadow:0 0 8px rgba(255,255,255,.45),0 0 14px rgba(0,245,255,.34);transition:border-color .18s,background .18s,color .18s,box-shadow .18s}
+    .cipher-cell:not(.is-empty){border-color:rgba(0,245,255,.48);background:rgba(0,245,255,.09);box-shadow:inset 0 0 12px rgba(0,245,255,.07)}
+    .cipher-cell.is-empty{color:transparent;text-shadow:none}
+    .cipher-cell.is-pixel-t{background:rgba(0,245,255,.13);border-color:rgba(0,245,255,.3)}
+    .cipher-cell.is-pixel-a{background:rgba(255,0,204,.12);border-color:rgba(255,0,204,.28)}
+    .cipher-cell.is-pixel-b{background:rgba(255,230,0,.11);border-color:rgba(255,230,0,.26)}
+    .finale-board.is-solved .cipher-cell.is-pixel-t{background:rgba(0,245,255,.62);border-color:var(--cyan);box-shadow:0 0 15px rgba(0,245,255,.72),inset 0 0 12px rgba(255,255,255,.18)}
+    .finale-board.is-solved .cipher-cell.is-pixel-a{background:rgba(255,0,204,.58);border-color:var(--magenta);box-shadow:0 0 15px rgba(255,0,204,.68),inset 0 0 12px rgba(255,255,255,.16)}
+    .finale-board.is-solved .cipher-cell.is-pixel-b{background:rgba(255,230,0,.58);border-color:var(--yellow);box-shadow:0 0 15px rgba(255,230,0,.62),inset 0 0 12px rgba(255,255,255,.14)}
+    .cipher-cell.is-target{border-color:var(--green);background:rgba(0,255,136,.2);color:#fff;box-shadow:0 0 16px rgba(0,255,136,.48),inset 0 0 12px rgba(0,255,136,.12)}
+    .cipher-row-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+    .puzzle-status{margin:.8rem 0 0;border:1px solid rgba(255,230,0,.3);border-radius:6px;padding:.75rem;color:rgba(255,246,160,.88);background:rgba(255,230,0,.055)}
+    .puzzle-status.is-solved{border-color:rgba(0,255,136,.55);background:rgba(0,255,136,.1);color:var(--green);font-weight:700;box-shadow:0 0 22px rgba(0,255,136,.14)}
+    .finale-side{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,340px);gap:1rem;align-items:start}
+    @media (max-width:760px){.finale-side{grid-template-columns:1fr}.finale-board-head{display:grid}}
+  </style>
 </head>
 <body>
-<main class="shell" data-finale>
+<main class="shell" data-finale data-final-word="CARDON">
   <div class="topline">
     <a class="nav-link" href="3scap3.html">Dashboard</a>
     <span>Epreuve finale // Acces conditionnel</span>
@@ -21,7 +48,8 @@
     <p class="subtitle">La finale s'ouvre uniquement quand les 6 fragments d'une equipe ont ete collectes.</p>
   </section>
 
-  <section class="page-layout">
+  <section class="finale-layout">
+    <div class="finale-side">
     <article class="brief">
       <div class="field">
         <label for="team-select">Equipe</label>
@@ -46,8 +74,7 @@
 
       <div data-unlocked hidden>
         <h2>Acces autorise</h2>
-        <p>Les 6 fragments sont reunis. Vous pouvez afficher ici l'enigme finale, son code d'ouverture ou les consignes du maitre du jeu.</p>
-        <div class="fragment-box">Emplacement reserve a l'epreuve finale.</div>
+        <p>Les 6 fragments sont reunis. Decalez chaque ligne horizontalement jusqu'a faire apparaitre le mot final dans une meme colonne.</p>
       </div>
     </article>
 
@@ -55,6 +82,21 @@
       <h2 class="panel-title">Fragments</h2>
       <div class="team-list" data-fragments></div>
     </aside>
+    </div>
+
+    <section class="panel finale-board" data-final-puzzle hidden>
+      <div class="finale-board-head">
+        <div>
+          <h2>Alignement temporel</h2>
+          <p>Chaque ligne contient un fragment. Utilisez les fleches pour le faire circuler sur les 20 positions de la ligne.</p>
+        </div>
+        <span class="status-badge">6 lignes // 20 colonnes</span>
+      </div>
+      <div class="cipher-scroll">
+        <div class="cipher-grid" data-puzzle-grid></div>
+      </div>
+      <p class="puzzle-status" data-puzzle-status aria-live="polite"></p>
+    </section>
   </section>
 </main>
 <script src="assets/api-config.js"></script>
