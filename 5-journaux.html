@@ -169,6 +169,7 @@ const posterExplanations = {
 const challengeId = 5;
 const finalFragment = 'PUBLICATIONS';
 const penaltyDuration = 45;
+const penaltyStorageKey = 'prch-journaux-penalty-until';
 const solvedSeries = new Set();
 let activeSeriesIndex = 0;
 const grid = document.querySelector('[data-series-grid]');
@@ -239,28 +240,58 @@ function setLocked(locked){
   });
 }
 
-function startPenalty(button){
-  revealExplanation(Number(button.dataset.series), Number(button.dataset.choice));
-  penaltyRemaining = penaltyDuration;
-  button.classList.add('is-wrong');
+function clearPenalty(){
+  if(penaltyTimer){
+    clearInterval(penaltyTimer);
+    penaltyTimer = null;
+  }
+  localStorage.removeItem(penaltyStorageKey);
+  penaltyRemaining = 0;
+  penaltyPanel.classList.remove('is-active');
+  penaltyMessage.textContent = 'Aucune penalite en cours';
+  penaltyTime.textContent = '';
+  document.querySelectorAll('.choice.is-wrong').forEach(item => item.classList.remove('is-wrong'));
+  setLocked(false);
+}
+
+function runPenalty(penaltyUntil){
+  if(penaltyTimer){
+    clearInterval(penaltyTimer);
+  }
+
   penaltyPanel.classList.add('is-active');
   penaltyMessage.textContent = 'Mauvais journal. Attendez avant de retenter.';
-  penaltyTime.textContent = formatTime(penaltyRemaining);
   setLocked(true);
-  penaltyTimer = setInterval(() => {
-    penaltyRemaining -= 1;
+
+  const updatePenalty = () => {
+    penaltyRemaining = Math.max(0, Math.ceil((penaltyUntil - Date.now()) / 1000));
     penaltyTime.textContent = formatTime(penaltyRemaining);
     if(penaltyRemaining <= 0){
-      clearInterval(penaltyTimer);
-      penaltyTimer = null;
-      penaltyRemaining = 0;
-      penaltyPanel.classList.remove('is-active');
-      penaltyMessage.textContent = 'Aucune penalite en cours';
-      penaltyTime.textContent = '';
-      document.querySelectorAll('.choice.is-wrong').forEach(item => item.classList.remove('is-wrong'));
-      setLocked(false);
+      clearPenalty();
     }
-  }, 1000);
+  };
+
+  updatePenalty();
+  if(penaltyRemaining > 0){
+    penaltyTimer = setInterval(updatePenalty, 250);
+  }
+}
+
+function startPenalty(button){
+  revealExplanation(Number(button.dataset.series), Number(button.dataset.choice));
+  button.classList.add('is-wrong');
+  const penaltyUntil = Date.now() + penaltyDuration * 1000;
+  localStorage.setItem(penaltyStorageKey, String(penaltyUntil));
+  runPenalty(penaltyUntil);
+}
+
+function restorePenalty(){
+  const penaltyUntil = Number(localStorage.getItem(penaltyStorageKey));
+  if(Number.isFinite(penaltyUntil) && penaltyUntil > Date.now()){
+    runPenalty(penaltyUntil);
+    return;
+  }
+  localStorage.removeItem(penaltyStorageKey);
 }
 
 function solveSeries(button, seriesId){
@@ -353,6 +384,7 @@ async function saveFragment(){
 
 setupInstructionMedia();
 renderSeries();
+restorePenalty();
 const session = getSession();
 sessionNotice.textContent = session ? `Equipe connectee: ${session.team}` : 'Aucune equipe connectee sur cet appareil. Vous pouvez jouer, mais la validation demandera une connexion equipe.';
 
