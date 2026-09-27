@@ -558,6 +558,7 @@ async function initFinale(){
   const puzzleGrid = root.querySelector("[data-puzzle-grid]");
   const puzzleStatus = root.querySelector("[data-puzzle-status]");
   const columnCount = 20;
+  const targetColumn = 9;
   const expectedWord = normalizePuzzleText(root.dataset.finalWord || "");
   const pixelPattern = [
     { t: [2, 3, 4, 5, 6], a: [9, 10, 11], b: [14, 15, 16, 17] },
@@ -594,7 +595,7 @@ async function initFinale(){
     if(expectedWord.length !== CHALLENGES.length){
       return -1;
     }
-    return rows.map(row => row[0]).join("") === expectedWord ? 0 : -1;
+    return rows.map(row => row[targetColumn]).join("") === expectedWord ? targetColumn : -1;
   }
 
   function solvedPixelRow(rowIndex){
@@ -613,7 +614,28 @@ async function initFinale(){
     if(targetIndex < 0){
       return Array(columnCount).fill("");
     }
-    return shiftedCells(solvedPixelRow(rowIndex), targetIndex);
+    return shiftedCells(solvedPixelRow(rowIndex), targetIndex - targetColumn);
+  }
+
+  function hasSolvedPixelPattern(pixelRows){
+    return pixelRows.every((row, rowIndex) => {
+      const expected = solvedPixelRow(rowIndex);
+      return row.every((pixel, columnIndex) => pixel === expected[columnIndex]);
+    });
+  }
+
+  function guideMarkup(direction){
+    const arrow = direction === "down" ? "&#8595;" : "&#8593;";
+    const label = direction === "down" ? "Colonne cible, lire vers le bas" : "Colonne cible, lire vers le haut";
+    return `
+      <div class="cipher-guide" aria-hidden="true">
+        <span></span>
+        <div class="cipher-guide-track">
+          <span class="cipher-guide-arrow" style="grid-column:${targetColumn + 1}" title="${label}">${arrow}</span>
+        </div>
+        <span></span>
+      </div>
+    `;
   }
 
   function renderPuzzle(team, isUnlocked){
@@ -632,29 +654,30 @@ async function initFinale(){
       const pixels = initialPixelRow(cells.join(""), index);
       return shiftedCells(pixels, puzzleOffsets[index]);
     });
-    const solvedColumn = findSolvedColumn(rows);
-    const isSolved = solvedColumn >= 0;
+    const matchingColumn = findSolvedColumn(rows);
+    const isSolved = matchingColumn >= 0 && hasSolvedPixelPattern(pixelRows);
+    const solvedColumn = isSolved ? targetColumn : -1;
     puzzle.classList.toggle("is-solved", isSolved);
 
-    puzzleGrid.innerHTML = rows.map((cells, rowIndex) => `
+    puzzleGrid.innerHTML = guideMarkup("down") + rows.map((cells, rowIndex) => `
       <div class="cipher-row" data-puzzle-row="${rowIndex}">
         <span class="cipher-row-label">Fragment ${rowIndex + 1}</span>
         <button class="cipher-shift" type="button" data-row="${rowIndex}" data-direction="-1" aria-label="Decaler le fragment ${rowIndex + 1} vers la gauche" ${isSolved ? "disabled" : ""}>&larr;</button>
         <div class="cipher-cells">
           ${cells.map((character, columnIndex) => {
             const pixel = pixelRows[rowIndex][columnIndex];
-            return `<span class="cipher-cell ${character ? "" : "is-empty"} ${pixel ? `is-pixel-${pixel}` : ""} ${columnIndex === solvedColumn ? "is-target" : ""}" data-column="${columnIndex}">${character ? escapeHtml(character) : "&middot;"}</span>`;
+            return `<span class="cipher-cell ${character ? "" : "is-empty"} ${pixel ? `is-pixel-${pixel}` : ""} ${columnIndex === targetColumn ? "is-guide-column" : ""} ${columnIndex === solvedColumn ? "is-target" : ""}" data-column="${columnIndex}">${character ? escapeHtml(character) : "&middot;"}</span>`;
           }).join("")}
         </div>
         <button class="cipher-shift" type="button" data-row="${rowIndex}" data-direction="1" aria-label="Decaler le fragment ${rowIndex + 1} vers la droite" ${isSolved ? "disabled" : ""}>&rarr;</button>
       </div>
-    `).join("");
+    `).join("") + guideMarkup("up");
 
     puzzleStatus.classList.toggle("is-solved", isSolved);
     if(isSolved){
-      puzzleStatus.textContent = "Chronologie stabilisee. Alignement verrouille.";
+      puzzleStatus.textContent = "Rendez-vous à son bureau";
     }else if(expectedWord){
-      puzzleStatus.textContent = "Cherchez l'alignement qui fera apparaitre le mot final dans une colonne.";
+      puzzleStatus.textContent = "Utilisez la colonne centrale pour stabiliser les six fragments.";
     }else{
       puzzleStatus.textContent = "Mode preparation : la condition finale sera activee lorsque le mot attendu sera configure.";
     }
