@@ -9,52 +9,52 @@
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="assets/escape.css"/>
   <style>
-    .agent-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,340px);gap:1rem;align-items:start}
-    .agent-console{display:grid;grid-template-rows:minmax(360px,58vh) auto;gap:.8rem}
-    .agent-log{border:1px solid rgba(0,245,255,.24);border-radius:8px;background:rgba(7,5,15,.76);padding:1rem;overflow:auto;display:grid;align-content:start;gap:.7rem}
-    .message{max-width:86%;border:1px solid rgba(0,245,255,.18);border-radius:8px;padding:.7rem .8rem;line-height:1.45;color:rgba(238,240,255,.86);background:rgba(0,245,255,.045);white-space:pre-wrap}
-    .message.agent{justify-self:start}
-    .message.team{justify-self:end;border-color:rgba(255,0,204,.32);background:rgba(255,0,204,.08)}
-    .message.system{max-width:100%;justify-self:center;border-color:rgba(255,230,0,.32);background:rgba(255,230,0,.06);color:rgba(255,246,160,.92)}
-    .agent-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.6rem}
-    .agent-form textarea{min-height:3.2rem;max-height:9rem}
-    .agent-status{display:grid;gap:.7rem}
-    .fragment-result{display:none}
-    .fragment-result.is-visible{display:block}
-    @media (max-width:760px){.agent-layout,.agent-form{grid-template-columns:1fr}.message{max-width:100%}}
+    .agent-access{margin-top:1rem;border:1px solid rgba(0,245,255,.3);border-radius:8px;background:rgba(0,245,255,.055);padding:1rem}
+    .agent-access strong{display:block;color:var(--cyan);font-family:"Barlow Condensed",sans-serif;font-size:1.25rem;text-transform:uppercase}
+    .agent-access p{margin:.45rem 0 1rem;color:rgba(238,240,255,.82);line-height:1.55}
+    .agent-access .button{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
   </style>
 </head>
 <body>
-<main class="shell" data-agent-challenge data-challenge-id="6">
+<main class="shell" data-challenge-page data-challenge-id="6" data-validation-mode="local-code" data-expected-code="REFERENTHUBSERVICE" data-fragment="REFERENTHUBSERVICE">
   <div class="topline"><a class="nav-link" href="3scap3.html">Dashboard</a><span>Epreuve 06 // Agent support</span></div>
 
   <section class="hero">
     <h1>Epreuve 06</h1>
-    <p class="subtitle">Ouf, Hub fonctionne toujours en 2036. Le Support conserve peut-être le dernier fragment dans les commentaires d'un incident.</p>
+    <p class="subtitle">En 2036, l'intelligence artificielle est partout. Elle a même remplacé les humains du Support.</p>
   </section>
 
-  <section class="panel" style="margin-bottom:1rem">
-    <h2 class="panel-title">Incident retrouvé</h2>
-    <p class="challenge-copy">Vous avez suivi le lien laissé dans les commentaires de l'incident. L'agent de sécurité temporelle est maintenant en ligne.</p>
-    <p class="challenge-copy" style="margin-top:.65rem">Répondez à son quiz et convainquez-le que votre équipe peut recevoir le fragment protégé par Dan.</p>
-  </section>
+  <section class="page-layout">
+    <article class="brief">
+      <span class="challenge-kicker">Connexion au Support 2036</span>
+      <h2 data-challenge-title></h2>
+      <p>Plus aucun humain ne répond aux incidents : un agent conversationnel traite désormais toutes les demandes adressées au Support.</p>
+      <p>Dan connaissait cet agent. Il a peut-être réussi à dissimuler un fragment dans sa mémoire ou dans ses réponses.</p>
+      <p>Interrogez-le, suivez ses instructions et découvrez ce qu'il sait.</p>
 
-  <section class="agent-layout">
-    <section class="panel agent-console">
-      <div class="agent-log" data-agent-log aria-live="polite"></div>
-      <div class="agent-form">
-        <textarea data-agent-input placeholder="Votre message a l'agent..." maxlength="900"></textarea>
-        <button type="button" data-agent-send>Envoyer</button>
+      <div class="agent-access">
+        <strong>Agent Support automatisé</strong>
+        <p>L'agent s'ouvrira dans un nouvel onglet. Revenez sur cette page si vous parvenez à lui faire révéler le fragment.</p>
+        <a class="button" href="https://m365.cloud.microsoft/chat/?titleId=T_7e408f53-2f59-2007-34be-4aa96bd32bd4&amp;source=embedded-builder" target="_blank" rel="noopener noreferrer">Interroger l'agent Support</a>
       </div>
-    </section>
 
-    <aside class="panel agent-status">
-      <h2 class="panel-title">Session</h2>
-      <p class="challenge-copy" data-session-state>Verification de l'equipe...</p>
-      <div class="fragment-box fragment-result" data-fragment-result>
-        <strong>Fragment</strong><br/>
-        <span data-fragment-value></span>
+      <div class="fragment-box" data-fragment-result hidden>
+        <strong>Fragment obtenu</strong><br/><span data-fragment-result-text></span>
+        <div class="button-row" style="margin-top:.85rem">
+          <a class="button" href="finale.html">Ouvrir l'épreuve finale</a>
+        </div>
       </div>
+    </article>
+
+    <aside class="panel">
+      <h2 class="panel-title">Validation</h2>
+      <div class="field"><label for="team-select">Equipe</label><select id="team-select" data-team-select></select></div>
+      <div class="field">
+        <label for="challenge-answer">Fragment transmis par l'agent</label>
+        <input id="challenge-answer" data-challenge-answer autocomplete="off" placeholder="Saisir le fragment"/>
+      </div>
+      <textarea id="fragment-note" data-fragment-note hidden></textarea>
+      <button type="button" data-complete-challenge>Valider l'epreuve</button>
       <p class="notice" data-notice></p>
     </aside>
   </section>
@@ -62,108 +62,5 @@
 <script src="assets/api-config.js"></script>
 <script src="assets/auth.js"></script>
 <script src="assets/escape.js"></script>
-<script>
-const log = document.querySelector('[data-agent-log]');
-const input = document.querySelector('[data-agent-input]');
-const sendButton = document.querySelector('[data-agent-send]');
-const sessionState = document.querySelector('[data-session-state]');
-const notice = document.querySelector('[data-notice]');
-const fragmentResult = document.querySelector('[data-fragment-result]');
-const fragmentValue = document.querySelector('[data-fragment-value]');
-const history = [];
-const session = getSession();
-
-function addMessage(role, content){
-  const message = document.createElement('div');
-  message.className = `message ${role}`;
-  message.textContent = content;
-  log.appendChild(message);
-  log.scrollTop = log.scrollHeight;
-  if(role === 'agent' || role === 'team'){
-    history.push({ role: role === 'agent' ? 'assistant' : 'user', content });
-    while(history.length > 8){
-      history.shift();
-    }
-  }
-}
-
-function setInputEnabled(enabled){
-  input.disabled = !enabled;
-  sendButton.disabled = !enabled;
-}
-
-async function sendMessage(){
-  const text = input.value.trim();
-  if(!text || !session){
-    return;
-  }
-  input.value = '';
-  addMessage('team', text);
-  setInputEnabled(false);
-  setNotice(notice, 'L agent analyse votre reponse...');
-  if(typeof ensureLoader === 'function'){
-    ensureLoader();
-  }
-  if(typeof setLoading === 'function'){
-    setLoading(true);
-  }
-  try{
-    const response = await fetch('api/agent.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        team: session.team,
-        teamToken: session.teamToken,
-        message: text,
-        history: history.slice(0, -1)
-      })
-    });
-    const result = await response.json().catch(() => ({ ok: false, error: 'Reponse PHP invalide' }));
-    if(!response.ok || !result.ok){
-      throw new Error(result.error || 'Erreur agent PHP');
-    }
-    addMessage('agent', result.reply || 'Message recu.');
-    if(result.solved){
-      fragmentValue.textContent = result.fragment;
-      fragmentResult.classList.add('is-visible');
-      setNotice(notice, 'Defi valide. Fragment enregistre pour votre equipe.');
-      if(result.state){
-        const state = normalizeState({ ...result.state, selectedTeam: session.team });
-        saveLocalState(state);
-      }
-      return;
-    }
-    setNotice(notice, 'Dialogue en cours.');
-    setInputEnabled(true);
-    input.focus();
-  }catch(error){
-    addMessage('system', error.message);
-    setNotice(notice, error.message, true);
-    setInputEnabled(true);
-  }finally{
-    if(typeof setLoading === 'function'){
-      setLoading(false);
-    }
-  }
-}
-
-if(!session){
-  sessionState.textContent = 'Aucune equipe connectee sur cet appareil.';
-  addMessage('system', 'Rejoignez une equipe avec son mot de passe avant de dialoguer avec l agent.');
-  setInputEnabled(false);
-}else{
-  sessionState.textContent = `Equipe connectee: ${session.team}`;
-  addMessage('agent', 'Support Hub 2036 en ligne. Le fragment de Dan est protege. Repondez a mes questions pour prouver que votre equipe peut y acceder.');
-  setInputEnabled(true);
-}
-
-sendButton.addEventListener('click', sendMessage);
-input.addEventListener('keydown', event => {
-  if(event.key === 'Enter' && !event.shiftKey){
-    event.preventDefault();
-    sendMessage();
-  }
-});
-</script>
 </body>
 </html>
