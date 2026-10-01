@@ -127,6 +127,7 @@ function normalizeDashboardState(state){
       name: team.name || "",
       active: team.active !== false,
       createdAt: team.createdAt || "",
+      chronoStartedAt: team.chronoStartedAt || "",
       startChallengeId: normalizeChallengeId(team.startChallengeId || 1),
       nextChallengeId: team.nextChallengeId == null ? null : normalizeChallengeId(team.nextChallengeId),
       completed: Array.isArray(team.completed) ? team.completed.map(Number) : [],
@@ -149,7 +150,7 @@ function buildTimeline(team){
     }
   });
 
-  let cursor = parseTime(team.createdAt);
+  let cursor = parseTime(team.chronoStartedAt);
   return challengeSequence(team.startChallengeId).map(challengeId => {
     const challenge = CHALLENGES.find(item => item.id === challengeId);
     const progress = progressByChallenge.get(challengeId);
@@ -169,7 +170,7 @@ function buildTimeline(team){
 function renderSummary(state){
   const teams = state.teams.filter(team => team.active);
   const completeTeams = teams.filter(team => new Set(team.completed).size >= CHALLENGES.length).length;
-  const runningTeams = teams.filter(team => team.nextChallengeId !== null && new Set(team.completed).size < CHALLENGES.length).length;
+  const runningTeams = teams.filter(team => team.chronoStartedAt && team.nextChallengeId !== null && new Set(team.completed).size < CHALLENGES.length).length;
   const completedChallenges = teams.reduce((total, team) => total + new Set(team.completed).size, 0);
   summary.innerHTML = `
     <article class="summary-card">
@@ -252,10 +253,12 @@ function renderDashboard(state){
 
 function mergeFinalChronos(state, finalState){
   const finalByTeam = new Map((finalState.teams || []).map(team => [team.team, team]));
+  const chronoStartedAt = finalState.startedAt || "";
   return {
     ...state,
     teams: state.teams.map(team => ({
       ...team,
+      chronoStartedAt,
       finalChrono: finalByTeam.get(team.name) || { bonusMalusSeconds: 0, chronoClos: false }
     }))
   };
