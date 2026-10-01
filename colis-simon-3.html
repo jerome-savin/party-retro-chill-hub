@@ -34,7 +34,11 @@
     <aside class="panel">
       <h2 class="panel-title">Validation</h2>
       <div class="field"><label for="team-select">Equipe</label><select id="team-select" data-team-select></select></div>
-      <div class="field"><label for="fragment-note">Fragment obtenu</label><textarea id="fragment-note" data-fragment-note placeholder="Code fourni par le SIMON (dans le bon ordre)"></textarea></div>
+      <div class="field">
+        <label for="challenge-answer">Code fourni par le SIMON</label>
+        <input id="challenge-answer" data-challenge-answer inputmode="numeric" autocomplete="off" placeholder="Saisir le code dans le bon ordre"/>
+      </div>
+      <textarea id="fragment-note" data-fragment-note hidden></textarea>
       <button type="button" data-complete-challenge>Valider l'epreuve</button>
       <p class="notice" data-notice></p>
     </aside>
