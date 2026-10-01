@@ -89,6 +89,8 @@ button:disabled{cursor:not-allowed;opacity:.45}
 .session-actions{margin-top:1rem}
 .is-hidden{display:none!important}
 .fragment-box{border:1px dashed rgba(255,230,0,.45);border-radius:8px;padding:1rem;background:rgba(255,230,0,.06);color:rgba(255,246,160,.9)}
+[data-fragment-result],.fragment-box.is-obtained{border-style:solid;border-color:rgba(0,255,136,.62);background:rgba(0,255,136,.1);color:#caffdf;box-shadow:0 0 22px rgba(0,255,136,.12),inset 0 0 18px rgba(0,255,136,.05)}
+[data-fragment-result] strong,.fragment-box.is-obtained strong{color:var(--green);text-shadow:0 0 12px rgba(0,255,136,.32)}
 .notice{min-height:1.4rem;color:var(--green);margin-top:.7rem}
 .notice.is-error{color:var(--danger)}
 .is-ok{color:var(--green)}
