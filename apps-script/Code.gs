@@ -15,6 +15,9 @@ const ESCAPE_STATE_CACHE_KEY = 'escape_public_state_v3';
 const ESCAPE_STATE_CACHE_SECONDS = 60;
 const INVITATION_BOARD_CACHE_KEY = 'invitation_board_v1';
 const INVITATION_BOARD_CACHE_SECONDS = 60;
+const PARTICIPANTS_CACHE_KEY = 'participants_public_v1';
+const ESCAPE_ASSIGNMENTS_CACHE_KEY = 'escape_assignments_v1';
+const DIRECTORY_CACHE_SECONDS = 30;
 const USER_LAST_LOGIN_CACHE_SECONDS = 300;
 const PASSWORD_RESET_TTL_MINUTES = 30;
 const ORGANIZER_USERNAME = 'organisateurs';
@@ -51,18 +54,9 @@ function doGet(event) {
 
   try {
     if (params.action) {
-      setupPredictionSheet_();
-      setupUserSheet_();
-      setupChatSheets_();
-      setupMissionSheet_();
-      setupInvitationSheet_();
-      if (params.action !== 'get') {
-        setupEscapeSheets_();
-      }
       return jsonp_(callback, { ok: true, data: handleEscapeAction_(params) });
     }
 
-    setupRegistrationSheet_();
     return jsonp_(callback, readRegistrations_());
   } catch (error) {
     if (params.action) {
@@ -74,7 +68,6 @@ function doGet(event) {
 
 function doPost(event) {
   try {
-    setupRegistrationSheet_();
     saveRegistration_(event.parameter || {});
     return ContentService
       .createTextOutput(JSON.stringify({ ok: true }))
@@ -672,8 +665,13 @@ function toDate_(value) {
 }
 
 function getEscapeAssignmentRows_() {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get(ESCAPE_ASSIGNMENTS_CACHE_KEY);
+  if (cached) {
+    return JSON.parse(cached);
+  }
   const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_ESCAPE_ASSIGNMENTS);
-  return sheet.getDataRange().getValues().slice(1)
+  const assignments = sheet.getDataRange().getValues().slice(1)
     .map((row, index) => ({
       row: index + 2,
       userId: normalizeUsername_(row[0]),
@@ -683,6 +681,12 @@ function getEscapeAssignmentRows_() {
       active: row[4] === '' ? true : row[4] !== false
     }))
     .filter(assignment => assignment.userId && assignment.teamId);
+  cache.put(ESCAPE_ASSIGNMENTS_CACHE_KEY, JSON.stringify(assignments), DIRECTORY_CACHE_SECONDS);
+  return assignments;
+}
+
+function invalidateEscapeAssignmentsCache_() {
+  CacheService.getScriptCache().remove(ESCAPE_ASSIGNMENTS_CACHE_KEY);
 }
 
 function readFinalChronoState_() {
@@ -709,62 +713,68 @@ function readFinalChronoState_() {
 }
 
 function startFinalChronos_() {
-  syncFinalChronoRows_();
-  const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_FINAL_CHRONOS);
-  const rows = getFinalChronoRows_();
-  const existingStart = rows.find(row => row.startedAt);
-  const start = existingStart ? toDate_(existingStart.startedAt) || new Date() : new Date();
-  rows.forEach(row => {
-    sheet.getRange(row.row, 6, 1, 2).setValues([[start, new Date()]]);
+  return withScriptLock_(function() {
+    syncFinalChronoRows_();
+    const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_FINAL_CHRONOS);
+    const rows = getFinalChronoRows_();
+    const existingStart = rows.find(row => row.startedAt);
+    const start = existingStart ? toDate_(existingStart.startedAt) || new Date() : new Date();
+    rows.forEach(row => {
+      sheet.getRange(row.row, 6, 1, 2).setValues([[start, new Date()]]);
+    });
+    return readFinalChronoState_();
   });
-  return readFinalChronoState_();
 }
 
 function stopFinalChrono_(team) {
-  syncFinalChronoRows_();
-  const cleanTeam = String(team || '').trim();
-  if (!cleanTeam) {
-    throw new Error('Equipe requise');
-  }
-  const rows = getFinalChronoRows_();
-  const row = rows.find(item => item.team === cleanTeam);
-  if (!row) {
-    throw new Error('Equipe inconnue');
-  }
-  const startedAt = toDate_(row.startedAt);
-  if (!startedAt) {
-    throw new Error('Les chronos ne sont pas encore demarres');
-  }
-  if (row.chronoClos === true && row.tempsFinalMs) {
-    return readFinalChronoState_();
-  }
+  return withScriptLock_(function() {
+    syncFinalChronoRows_();
+    const cleanTeam = String(team || '').trim();
+    if (!cleanTeam) {
+      throw new Error('Equipe requise');
+    }
+    const rows = getFinalChronoRows_();
+    const row = rows.find(item => item.team === cleanTeam);
+    if (!row) {
+      throw new Error('Equipe inconnue');
+    }
+    const startedAt = toDate_(row.startedAt);
+    if (!startedAt) {
+      throw new Error('Les chronos ne sont pas encore demarres');
+    }
+    if (row.chronoClos === true && row.tempsFinalMs) {
+      return readFinalChronoState_();
+    }
 
-  const now = new Date();
-  const elapsedMs = now.getTime() - startedAt.getTime() + (Number(row.bonusMalusSeconds || 0) * 1000);
-  const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_FINAL_CHRONOS);
-  sheet.getRange(row.row, 3, 1, 5).setValues([[true, now, Math.max(0, elapsedMs), startedAt, now]]);
-  return readFinalChronoState_();
+    const now = new Date();
+    const elapsedMs = now.getTime() - startedAt.getTime() + (Number(row.bonusMalusSeconds || 0) * 1000);
+    const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_FINAL_CHRONOS);
+    sheet.getRange(row.row, 3, 1, 5).setValues([[true, now, Math.max(0, elapsedMs), startedAt, now]]);
+    return readFinalChronoState_();
+  });
 }
 
 function setFinalChronoAdjustment_(team, bonusMalusSeconds) {
-  syncFinalChronoRows_();
-  const cleanTeam = String(team || '').trim();
-  const adjustment = Math.round(Number(bonusMalusSeconds || 0));
-  if (!cleanTeam) {
-    throw new Error('Equipe requise');
-  }
-  const rows = getFinalChronoRows_();
-  const row = rows.find(item => item.team === cleanTeam);
-  if (!row) {
-    throw new Error('Equipe inconnue');
-  }
-  if (row.chronoClos === true) {
-    throw new Error('Chrono deja cloture pour cette equipe');
-  }
-  const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_FINAL_CHRONOS);
-  sheet.getRange(row.row, 2, 1, 2).setValues([[adjustment, false]]);
-  sheet.getRange(row.row, 7).setValue(new Date());
-  return readFinalChronoState_();
+  return withScriptLock_(function() {
+    syncFinalChronoRows_();
+    const cleanTeam = String(team || '').trim();
+    const adjustment = Math.round(Number(bonusMalusSeconds || 0));
+    if (!cleanTeam) {
+      throw new Error('Equipe requise');
+    }
+    const rows = getFinalChronoRows_();
+    const row = rows.find(item => item.team === cleanTeam);
+    if (!row) {
+      throw new Error('Equipe inconnue');
+    }
+    if (row.chronoClos === true) {
+      throw new Error('Chrono deja cloture pour cette equipe');
+    }
+    const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_FINAL_CHRONOS);
+    sheet.getRange(row.row, 2, 1, 2).setValues([[adjustment, false]]);
+    sheet.getRange(row.row, 7).setValue(new Date());
+    return readFinalChronoState_();
+  });
 }
 
 function syncFinalChronoRows_() {
@@ -1040,6 +1050,7 @@ function setEscapeTeamMembers_(team, members) {
   requestedMembers.forEach(username => {
     sheet.appendRow([username, record.name, new Date(), ORGANIZER_USERNAME, true]);
   });
+  invalidateEscapeAssignmentsCache_();
 }
 
 function parseMemberList_(members) {
@@ -1054,28 +1065,30 @@ function parseMemberList_(members) {
 }
 
 function completeEscapeChallenge_(team, challengeId, fragment) {
-  const cleanTeam = String(team || '').trim();
-  const cleanFragment = String(fragment || '').trim();
+  return withScriptLock_(function() {
+    const cleanTeam = String(team || '').trim();
+    const cleanFragment = String(fragment || '').trim();
 
-  if (!cleanTeam) {
-    throw new Error('Equipe requise');
-  }
-  if (!challengeId || challengeId < 1 || challengeId > CHALLENGE_COUNT) {
-    throw new Error('Epreuve invalide');
-  }
-
-  const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_PROGRESS);
-  const values = sheet.getDataRange().getValues();
-  for (let row = 2; row <= values.length; row++) {
-    if (values[row - 1][0] === cleanTeam && Number(values[row - 1][1]) === challengeId) {
-      sheet.getRange(row, 3, 1, 2).setValues([[cleanFragment, new Date()]]);
-      invalidateEscapeCache_();
-      return;
+    if (!cleanTeam) {
+      throw new Error('Equipe requise');
     }
-  }
+    if (!challengeId || challengeId < 1 || challengeId > CHALLENGE_COUNT) {
+      throw new Error('Epreuve invalide');
+    }
 
-  sheet.appendRow([cleanTeam, challengeId, cleanFragment, new Date()]);
-  invalidateEscapeCache_();
+    const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_PROGRESS);
+    const values = sheet.getDataRange().getValues();
+    for (let row = 2; row <= values.length; row++) {
+      if (values[row - 1][0] === cleanTeam && Number(values[row - 1][1]) === challengeId) {
+        sheet.getRange(row, 3, 1, 2).setValues([[cleanFragment, new Date()]]);
+        invalidateEscapeCache_();
+        return;
+      }
+    }
+
+    sheet.appendRow([cleanTeam, challengeId, cleanFragment, new Date()]);
+    invalidateEscapeCache_();
+  });
 }
 
 function savePrediction_(username, token, suspect1, suspect2) {
@@ -1199,6 +1212,7 @@ function registerUser_(username, password, email, phone, notifyByEmail, avatar) 
         '',
         ''
       ]]);
+    invalidateParticipantsCache_();
     return makeUserSession_(cleanUsername, cleanDisplayName || cleanUsername, passwordHash, cleanAvatar);
   }
 
@@ -1217,6 +1231,7 @@ function registerUser_(username, password, email, phone, notifyByEmail, avatar) 
     ''
   ]);
 
+  invalidateParticipantsCache_();
   return makeUserSession_(cleanUsername, cleanDisplayName || cleanUsername, passwordHash, cleanAvatar);
 }
 
@@ -1342,7 +1357,12 @@ function lookupUserByAvatar_(avatar) {
 }
 
 function listParticipants_() {
-  return {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get(PARTICIPANTS_CACHE_KEY);
+  if (cached) {
+    return JSON.parse(cached);
+  }
+  const result = {
     participants: getUserRecords_()
       .filter(user => user.active)
       .map(user => ({
@@ -1352,6 +1372,12 @@ function listParticipants_() {
       }))
       .sort((a, b) => a.displayName.localeCompare(b.displayName))
   };
+  cache.put(PARTICIPANTS_CACHE_KEY, JSON.stringify(result), DIRECTORY_CACHE_SECONDS);
+  return result;
+}
+
+function invalidateParticipantsCache_() {
+  CacheService.getScriptCache().remove(PARTICIPANTS_CACHE_KEY);
 }
 
 function adminCreateUser_(username, email, phone, notifyByEmail, avatar) {
@@ -1398,6 +1424,7 @@ function adminCreateUser_(username, email, phone, notifyByEmail, avatar) {
     sheet.appendRow(row);
   }
 
+  invalidateParticipantsCache_();
   return { username: cleanUsername, createdWithoutPassword: !row[6] };
 }
 
@@ -2085,6 +2112,18 @@ function makeResetToken_() {
 
 function makeTeamToken_(team, passwordHash) {
   return hash_(team + ':' + passwordHash + ':prch-escape-v1');
+}
+
+function withScriptLock_(callback) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) {
+    throw new Error('Serveur occupe. Veuillez reessayer dans quelques secondes.');
+  }
+  try {
+    return callback();
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function hash_(value) {

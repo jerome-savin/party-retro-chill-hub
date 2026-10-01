@@ -4,6 +4,13 @@
   const PUBLIC_PAGES = new Set(["connexion.html", "index.html", "pronostics.html"]);
   const ADMIN_PAGES = new Set(["admin.html", "admin-communications.html", "admin-escape.html", "admin-missions.html"]);
   const ORGANIZER_USERNAME = "organisateurs";
+  const RETRYABLE_ACTIONS = new Set([
+    "getPredictions", "userLookupAvatar", "validateUserSession", "listParticipants",
+    "chatList", "missionGet", "missionAdminList", "invitationGet", "invitationBoardGet",
+    "get", "getMyEscapeTeam", "validateSession", "getChallengeAccess",
+    "getOrganizerChallengeAccess", "finalChronoGet", "adminList"
+  ]);
+  const RETRY_DELAYS = [700, 1800];
 
   function currentPage(){
     const page = window.location.pathname.split("/").pop();
@@ -52,7 +59,17 @@
     }
   }
 
-  function authRequest(action, params = {}){
+  function waitBeforeRetry(attempt){
+    const delay = RETRY_DELAYS[attempt - 1] + Math.floor(Math.random() * 301);
+    return new Promise(resolve => window.setTimeout(resolve, delay));
+  }
+
+  function isTransientError(error){
+    const message = String(error && error.message || error || "");
+    return /delai depasse|impossible de contacter|serveur occupe|too many|internal error|service spreadsheets failed|service invoked/i.test(message);
+  }
+
+  function authRequestOnce(action, params = {}){
     return new Promise((resolve, reject) => {
       if(!API_URL){
         reject(new Error("Serveur non configure"));
@@ -91,6 +108,25 @@
       script.src = `${API_URL}?${query.toString()}`;
       document.body.appendChild(script);
     });
+  }
+
+  async function authRequest(action, params = {}){
+    const attempts = RETRYABLE_ACTIONS.has(action) ? 3 : 1;
+    let lastError;
+    for(let attempt = 0; attempt < attempts; attempt += 1){
+      if(attempt > 0){
+        await waitBeforeRetry(attempt);
+      }
+      try{
+        return await authRequestOnce(action, params);
+      }catch(error){
+        lastError = error;
+        if(!isTransientError(error)){
+          throw error;
+        }
+      }
+    }
+    throw lastError;
   }
 
   function showUser(session){

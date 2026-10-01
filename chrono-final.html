@@ -320,6 +320,7 @@
     let chronoState = { serverNow: "", startedAt: "", teams: [] };
     let serverOffsetMs = 0;
     let selfieTimeout = null;
+    let chronoRefreshTimeout = null;
 
     function setNotice(message, isError = false){
       notice.textContent = message;
@@ -336,7 +337,12 @@
       }[char]));
     }
 
-    function apiRequest(action, payload = {}){
+    function isTransientApiError(error){
+      const message = String(error && error.message || error || "");
+      return /delai depasse|impossible de contacter|serveur occupe|too many|internal error|service spreadsheets failed|service invoked/i.test(message);
+    }
+
+    function apiRequestOnce(action, payload = {}){
       if(!API_URL){
         return Promise.reject(new Error("API non configuree"));
       }
@@ -371,6 +377,27 @@
         script.src = url.toString();
         document.body.appendChild(script);
       });
+    }
+
+    async function apiRequest(action, payload = {}){
+      const attempts = action === "finalChronoGet" ? 3 : 1;
+      let lastError;
+      for(let attempt = 0; attempt < attempts; attempt += 1){
+        if(attempt > 0){
+          const delays = [700, 1800];
+          const delay = delays[attempt - 1] + Math.floor(Math.random() * 301);
+          await new Promise(resolve => window.setTimeout(resolve, delay));
+        }
+        try{
+          return await apiRequestOnce(action, payload);
+        }catch(error){
+          lastError = error;
+          if(!isTransientApiError(error)){
+            throw error;
+          }
+        }
+      }
+      throw lastError;
     }
 
     function normalizeState(state){
@@ -508,6 +535,19 @@
       }
     }
 
+    function scheduleChronoRefresh(){
+      window.clearTimeout(chronoRefreshTimeout);
+      if(document.hidden){
+        return;
+      }
+      const delay = 3000 + Math.floor(Math.random() * 1001);
+      chronoRefreshTimeout = window.setTimeout(() => {
+        refreshState({ silent: true })
+          .catch(error => setNotice(error.message, true))
+          .finally(scheduleChronoRefresh);
+      }, delay);
+    }
+
     async function startChronos(){
       startButton.disabled = true;
       try{
@@ -522,11 +562,19 @@
       }
     }
 
-    refreshState().catch(error => setNotice(error.message, true));
+    refreshState()
+      .catch(error => setNotice(error.message, true))
+      .finally(scheduleChronoRefresh);
     window.setInterval(updateClocks, 1000);
-    window.setInterval(() => {
-      refreshState({ silent: true }).catch(error => setNotice(error.message, true));
-    }, 3000);
+    document.addEventListener("visibilitychange", () => {
+      if(document.hidden){
+        window.clearTimeout(chronoRefreshTimeout);
+        return;
+      }
+      refreshState({ silent: true })
+        .catch(error => setNotice(error.message, true))
+        .finally(scheduleChronoRefresh);
+    });
 
     grid.addEventListener("click", event => {
       const button = event.target.closest("[data-team]");

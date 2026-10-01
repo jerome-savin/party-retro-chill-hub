@@ -366,6 +366,18 @@ async function refresh(){
   }
 }
 
+let predictionsRefreshTimeout = null;
+function schedulePredictionsRefresh(){
+  window.clearTimeout(predictionsRefreshTimeout);
+  if(document.hidden){
+    return;
+  }
+  const delay = 30000 + Math.floor(Math.random() * 5001);
+  predictionsRefreshTimeout = window.setTimeout(() => {
+    refresh().finally(schedulePredictionsRefresh);
+  }, delay);
+}
+
 suspectsNode.addEventListener('click', event => {
   const card = event.target.closest('[data-suspect]');
   if(!card){
@@ -413,8 +425,14 @@ submitButton.addEventListener('click', async () => {
 });
 
 render();
-refresh();
-window.setInterval(refresh, 30000);
+refresh().finally(schedulePredictionsRefresh);
+document.addEventListener('visibilitychange', () => {
+  if(document.hidden){
+    window.clearTimeout(predictionsRefreshTimeout);
+    return;
+  }
+  refresh().finally(schedulePredictionsRefresh);
+});
 </script>
 </body>
 </html>

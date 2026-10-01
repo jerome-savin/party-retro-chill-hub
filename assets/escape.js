@@ -102,6 +102,13 @@ function isOrganizerSession(session = getUserSession()){
 }
 
 let pendingApiRequests = 0;
+const RETRYABLE_API_ACTIONS = new Set([
+  "getPredictions", "userLookupAvatar", "validateUserSession", "listParticipants",
+  "chatList", "missionGet", "missionAdminList", "invitationGet", "invitationBoardGet",
+  "get", "getMyEscapeTeam", "validateSession", "getChallengeAccess",
+  "getOrganizerChallengeAccess", "finalChronoGet", "adminList"
+]);
+const API_RETRY_DELAYS = [700, 1800];
 
 function setLoading(isLoading){
   pendingApiRequests += isLoading ? 1 : -1;
@@ -134,12 +141,20 @@ function ensureLoader(){
   document.body.appendChild(loader);
 }
 
-function apiRequest(action, payload = {}){
+function waitBeforeApiRetry(attempt){
+  const delay = API_RETRY_DELAYS[attempt - 1] + Math.floor(Math.random() * 301);
+  return new Promise(resolve => window.setTimeout(resolve, delay));
+}
+
+function isTransientApiError(error){
+  const message = String(error && error.message || error || "");
+  return /delai depasse|impossible de contacter|serveur occupe|too many|internal error|service spreadsheets failed|service invoked/i.test(message);
+}
+
+function apiRequestOnce(action, payload = {}){
   if(!API_URL){
     return Promise.reject(new Error("API non configuree"));
   }
-  ensureLoader();
-  setLoading(true);
   return new Promise((resolve, reject) => {
     const callbackName = `prchEscape${Date.now()}${Math.random().toString(36).slice(2)}`;
     const script = document.createElement("script");
@@ -157,7 +172,6 @@ function apiRequest(action, payload = {}){
       window.clearTimeout(timeout);
       delete window[callbackName];
       script.remove();
-      setLoading(false);
     }
     window[callbackName] = response => {
       cleanup();
@@ -176,6 +190,31 @@ function apiRequest(action, payload = {}){
     script.src = url.toString();
     document.body.appendChild(script);
   });
+}
+
+async function apiRequest(action, payload = {}){
+  const attempts = RETRYABLE_API_ACTIONS.has(action) ? 3 : 1;
+  let lastError;
+  ensureLoader();
+  setLoading(true);
+  try{
+    for(let attempt = 0; attempt < attempts; attempt += 1){
+      if(attempt > 0){
+        await waitBeforeApiRetry(attempt);
+      }
+      try{
+        return await apiRequestOnce(action, payload);
+      }catch(error){
+        lastError = error;
+        if(!isTransientApiError(error)){
+          throw error;
+        }
+      }
+    }
+    throw lastError;
+  }finally{
+    setLoading(false);
+  }
 }
 
 async function loadState(){
