@@ -440,6 +440,13 @@ async function initChallengePage(){
   const clue = root.querySelector("[data-default-clue]");
   const fragmentResult = root.querySelector("[data-fragment-result]");
   const fragmentResultText = root.querySelector("[data-fragment-result-text]");
+  const dashboardReturn = document.createElement("a");
+  dashboardReturn.className = "button";
+  dashboardReturn.href = "3scap3.html";
+  dashboardReturn.textContent = "Retour au dashboard";
+  dashboardReturn.style.marginTop = ".75rem";
+  dashboardReturn.style.display = "none";
+  completeButton.insertAdjacentElement("afterend", dashboardReturn);
   let session = getSession();
 
   if(title){
@@ -460,6 +467,7 @@ async function initChallengePage(){
         answer.disabled = true;
       }
       completeButton.disabled = true;
+      dashboardReturn.style.display = "none";
       if(fragmentResult){
         fragmentResult.hidden = true;
       }
@@ -477,6 +485,7 @@ async function initChallengePage(){
         answer.disabled = true;
       }
       completeButton.disabled = true;
+      dashboardReturn.style.display = "none";
       if(fragmentResult){
         fragmentResult.hidden = true;
       }
@@ -505,8 +514,9 @@ async function initChallengePage(){
       fragmentResult.hidden = !fragment;
       fragmentResultText.textContent = fragment;
     }
-    completeButton.disabled = isComplete && validationMode === "local-code";
-    setNotice(notice, isComplete ? "Epreuve deja validee pour cette equipe." : `Connecte: ${session.team}`);
+    completeButton.disabled = isComplete;
+    dashboardReturn.style.display = isComplete ? "inline-flex" : "none";
+    setNotice(notice, isComplete ? "Epreuve validee. Progression enregistree." : `Connecte: ${session.team}`);
   }
 
   completeButton.addEventListener("click", async () => {
@@ -518,7 +528,7 @@ async function initChallengePage(){
       return;
     }
     if(validationMode === "local-code" && normalizeChallengeAnswer(answer ? answer.value : "") !== normalizeChallengeAnswer(expectedCode)){
-      setNotice(notice, "Code incorrect. Verifiez le code fourni par votre contact.", true);
+      setNotice(notice, "Code incorrect. Verifiez le code.", true);
       return;
     }
     setNotice(notice, "Enregistrement en cours...");

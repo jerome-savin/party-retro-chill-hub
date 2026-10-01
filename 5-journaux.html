@@ -316,6 +316,7 @@ function renderSolution(){
     <p class="challenge-copy">Les quatre vraies couvertures pointent vers le meme signal.</p>
     <div class="fragment-box"><strong>${finalFragment}</strong></div>
     <button type="button" data-save-fragment>Valider le fragment pour mon equipe</button>
+    <a class="button" href="3scap3.html" data-dashboard-return hidden>Retour au dashboard</a>
     <p class="notice" data-notice></p>
   `;
 }
@@ -377,6 +378,14 @@ async function saveFragment(){
     const state = normalizeState({ ...remote, selectedTeam: session.team });
     saveLocalState(state);
     setNotice(notice, 'Fragment enregistre pour votre equipe.');
+    const saveButton = solutionPanel.querySelector('[data-save-fragment]');
+    const dashboardReturn = solutionPanel.querySelector('[data-dashboard-return]');
+    if(saveButton){
+      saveButton.hidden = true;
+    }
+    if(dashboardReturn){
+      dashboardReturn.hidden = false;
+    }
   }catch(error){
     setNotice(notice, error.message, true);
   }
